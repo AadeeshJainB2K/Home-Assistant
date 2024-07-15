@@ -47,15 +47,21 @@ binary_sensor:
       number: GPIO14
       inverted: True
     name: "Main Gate"
-    device_class: garage_door
+    device_class: door
 
   - platform: gpio
     pin:
       number: GPIO5
       mode:
         input: True
-    name: "PIR Sensor Outdoor"
+    name: "Outdoor Motion"
     device_class: motion
+
+  - platform: gpio
+    pin:
+      number: GPIO4
+      inverted: True
+    name: "Outdoor Rain"
 
 switch:
   - platform: gpio
