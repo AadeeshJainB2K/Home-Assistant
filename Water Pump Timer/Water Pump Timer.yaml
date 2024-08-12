@@ -1,0 +1,45 @@
+# Home Assistant Automation Yaml
+alias: Water Pump Timer
+description: ""
+trigger:
+  - platform: state
+    entity_id:
+      - valve.outdoor_water_pump
+    to: open
+    for:
+      hours: 0
+      minutes: "{{states.input_number.water_pump_timer.state}}"
+      seconds: 0
+condition: []
+action:
+  - metadata: {}
+    data: {}
+    target:
+      entity_id: valve.outdoor_water_pump
+    action: valve.close_valve
+mode: single
+
+# ESP Home Part
+
+binary_sensor:
+  - platform: gpio
+    id: waterPumpInput
+    pin:
+      number: GPIO5
+      inverted: True
+      mode:
+        input: true
+        pullup: true
+    on_press:
+      then:
+        - switch.turn_on: waterPumpSwitch
+    on_release:
+      then:
+        - switch.turn_off: waterPumpSwitch
+
+switch:
+  - platform: gpio
+    name: "Water Pump"
+    pin: GPIO3
+    id: waterPumpSwitch
+    inverted: True

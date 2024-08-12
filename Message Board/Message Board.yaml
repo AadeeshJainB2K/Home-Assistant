@@ -1,0 +1,35 @@
+#Automation Part
+alias: "Message Board "
+description: ""
+trigger:
+  - platform: state
+    entity_id:
+      - input_text.message_board
+    attribute: pattern
+condition: []
+action:
+  - metadata: {}
+    data: {}
+    target:
+      entity_id: light.bedroom_light
+    action: light.turn_on
+mode: single
+
+# ESP Home Part
+
+text_sensor:
+  - platform: homeassistant
+    entity_id: input_text.message_board
+    name: "Message Board"
+    id: message_board
+
+i2c:
+  sda: GPIO13
+  scl: GPIO12
+
+display:
+  - platform: lcd_pcf8574
+    dimensions: 16x2
+    address: 0x27
+    lambda: |-
+      it.printf(id(message_board).state.c_str());

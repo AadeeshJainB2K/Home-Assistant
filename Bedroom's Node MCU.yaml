@@ -1,6 +1,6 @@
 substitutions:
   name: esp-web-tools-example-716a9a
-  friendly_name: Outdoor's ESP8266
+  friendly_name: Bedroom
 packages:
   esphome.esp_web_tools_example: github://esphome/example-configs/esp-web-tools/esp8266.yaml@main
 esphome:
@@ -9,76 +9,86 @@ esphome:
   friendly_name: ${friendly_name}
 api:
   encryption:
-    key: API Key
+    key: your api key
 
 binary_sensor:
   - platform: gpio
-    id: waterPump
+    id: fanInput
     pin:
-      number: GPIO13
+      number: GPIO1
       inverted: True
       mode:
         input: true
         pullup: true
     on_press:
       then:
-        - switch.turn_on: waterPumpSwitch
+        - switch.turn_on: fanSwitch
     on_release:
       then:
-        - switch.turn_off: waterPumpSwitch
+        - switch.turn_off: fanSwitch
 
   - platform: gpio
-    id: outdoorsLight
+    id: lightInput
     pin:
-      number: GPIO12
+      number: GPIO3
       inverted: True
       mode:
         input: true
         pullup: true
     on_press:
       then:
-        - switch.turn_on: outdoorsLightSwitch
+        - switch.turn_on: lightSwitch
     on_release:
       then:
-        - switch.turn_off: outdoorsLightSwitch
+        - switch.turn_off: lightSwitch
 
   - platform: gpio
+    id: nightLampInput
     pin:
-      number: GPIO14
+      number: GPIO15
       inverted: True
-    name: "Main Gate"
-    device_class: door
+      mode:
+        input: true
+        pullup: true
+    on_press:
+      then:
+        - switch.turn_on: nightLampSwitch
+    on_release:
+      then:
+        - switch.turn_off: nightLampSwitch
 
   - platform: gpio
     pin:
       number: GPIO5
       mode:
         input: True
-    name: "Outdoor Motion"
+    name: "Motion"
     device_class: motion
 
   - platform: gpio
     pin:
       number: GPIO4
       inverted: True
-    name: "Outdoor Rain"
+    name: "Rain"
 
 switch:
   - platform: gpio
-    name: "Water Pump"
-    pin: GPIO3
-    id: waterPumpSwitch
+    name: "Fan"
+    pin: GPIO12
+    id: fanSwitch
     inverted: True
 
   - platform: gpio
     name: "Light"
-    pin: GPIO1
-    id: outdoorsLightSwitch
+    pin: GPIO14
+    id: lightSwitch
     inverted: True
 
   - platform: gpio
-    name: "Buzzer"
-    pin: GPIO0
+    name: "Night Lamp"
+    pin: GPIO13
+    id: nightLampSwitch
+    inverted: True
 
 sensor:
   - platform: dht
@@ -90,12 +100,12 @@ sensor:
       name: "Temperature"
     humidity:
       name: "Humidity"
-    update_interval: 2s
+    update_interval: 5s
 
 wifi:
-  ssid: abc
-  password: abc
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
   manual_ip:
-    static_ip: 192.168.31.216
-    gateway: 192.168.31.1
+    static_ip: 192.168.1.101
+    gateway: 192.168.1.1
     subnet: 255.255.255.0
