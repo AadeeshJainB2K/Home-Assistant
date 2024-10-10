@@ -1,0 +1,16 @@
+substitutions:
+  name: esp-web-tools-example-c8ba1d
+  friendly_name: Bell
+packages:
+  esphome.esp_web_tools_example: github://esphome/example-configs/esp-web-tools/esp8266.yaml@main
+esphome:
+  name: ${name}
+  name_add_mac_suffix: false
+  friendly_name: ${friendly_name}
+api:
+  encryption:
+    key: tncz0W8DeiYNfl8QvxUOubtGc9TE56xeUA+/xCCtj4I=
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
