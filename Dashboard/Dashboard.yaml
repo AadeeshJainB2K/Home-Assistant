@@ -1,0 +1,2281 @@
+views:
+  - icon: mdi:home-assistant
+    subview: false
+    title: Home
+    path: home
+    order: 1
+    hidden: false
+    cards:
+      - type: custom:mushroom-chips-card
+        alignment: center
+        chips:
+          - type: weather
+            show_temperature: true
+            show_conditions: true
+            entity: weather.forecast_home_2
+          - type: template
+            icon: mdi:lightbulb-group
+            icon_color: amber
+            content: >-
+              {% set entities =
+              [states['light.bedroom_light'],states['light.bedroom_night_lamp'],states['light.esphome_web_cb3fbd_rgb_light'],states['light.esphome_web_de1426_rgb_light'],states['light.outdoor_light'],states['light.esp_web_tools_example_de04c7_rgb_light'],states['light.study_room_light']]
+              %} {{ entities | selectattr('state','eq','on') | list | count }}
+            tap_action:
+              action: call-service
+              service: light.turn_off
+              target:
+                area_id:
+                  - bedroom
+                  - kitchen
+                  - living_room
+                  - outdoor
+                  - study_room
+                  - undisclosed
+            hold_action:
+              action: navigate
+              navigation_path: lights
+          - type: template
+            icon: mdi:fan
+            icon_color: green
+            content: >-
+              {% set entities =
+              [states['fan.bedroom_fan'],states['fan.study_room_fan']] %} {{
+              entities | selectattr('state','eq','on') | list | count }}
+            tap_action:
+              action: call-service
+              service: fan.turn_off
+              target:
+                area_id:
+                  - bedroom
+                  - kitchen
+                  - living_room
+                  - outdoor
+                  - study_room
+                  - undisclosed
+            hold_action:
+              action: navigate
+              navigation_path: fans
+          - type: template
+            icon: mdi:window-open
+            icon_color: cyan
+            content: >-
+              {% set entities = [] %} {{ entities |
+              selectattr('state','eq','open') | list | count }}
+            tap_action:
+              action: none
+            hold_action:
+              action: navigate
+              navigation_path: covers
+          - type: template
+            icon: mdi:dip-switch
+            icon_color: blue
+            content: >-
+              {% set entities =
+              [states['switch.esp_web_tools_example_716a9a_socket'],states['switch.esphome_web_cb3fbd_water_pump'],states['switch.esphome_web_cb3fbd_light'],states['switch.esp_web_tools_example_fc6b69_socket_1'],states['switch.esp_web_tools_example_fc6b69_socket_2']]
+              %} {{ entities | selectattr('state','eq','on') | list | count }}
+            tap_action:
+              action: call-service
+              service: switch.turn_off
+              target:
+                area_id:
+                  - bedroom
+                  - kitchen
+                  - living_room
+                  - outdoor
+                  - study_room
+                  - undisclosed
+            hold_action:
+              action: navigate
+              navigation_path: switches
+          - type: template
+            icon: mdi:thermostat
+            icon_color: orange
+            content: >-
+              {% set entities = [] %} {{ entities |
+              selectattr('state','ne','off') | list | count }}
+            tap_action:
+              action: none
+            hold_action:
+              action: navigate
+              navigation_path: climates
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-person-card
+            icon: mdi:help-circle
+            layout: vertical
+            primary_info: none
+            secondary_info: none
+            icon_type: entity-picture
+            entity: person.aadeesh
+          - type: custom:mushroom-person-card
+            icon: mdi:help-circle
+            layout: vertical
+            primary_info: none
+            secondary_info: none
+            icon_type: entity-picture
+            entity: person.abha
+          - type: custom:mushroom-person-card
+            icon: mdi:help-circle
+            layout: vertical
+            primary_info: none
+            secondary_info: none
+            icon_type: entity-picture
+            entity: person.dinesh
+      - type: custom:mushroom-template-card
+        primary: >-
+          {% set time = now().hour %} {% if (time >= 18) %} Good Evening,
+          {{user}}! {% elif (time >= 12) %} Good Afternoon, {{user}}! {% elif
+          (time >= 5) %} Good Morning, {{user}}! {% else %} Hello, {{user}}! {%
+          endif %}
+        icon: mdi:hand-wave
+        icon_color: orange
+        tap_action:
+          action: none
+        double_tap_action:
+          action: none
+        hold_action:
+          action: none
+      - type: vertical-stack
+        cards:
+          - type: custom:mushroom-title-card
+            title: Areas
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-template-card
+                icon: mdi:texture-box
+                primary: Bedroom
+                icon_color: blue
+                tap_action:
+                  action: navigate
+                  navigation_path: /dashboard-new/4
+                hold_action:
+                  action: none
+              - type: custom:mushroom-template-card
+                icon: mdi:texture-box
+                primary: Kitchen
+                icon_color: blue
+                tap_action:
+                  action: navigate
+                  navigation_path: /dashboard-new/5
+                hold_action:
+                  action: none
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-template-card
+                icon: mdi:texture-box
+                primary: Living Room
+                icon_color: blue
+                tap_action:
+                  action: navigate
+                  navigation_path: /dashboard-new/6
+                hold_action:
+                  action: none
+              - type: custom:mushroom-template-card
+                icon: mdi:texture-box
+                primary: Outdoor
+                icon_color: blue
+                tap_action:
+                  action: navigate
+                  navigation_path: /dashboard-new/7
+                hold_action:
+                  action: none
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-template-card
+                icon: mdi:texture-box
+                primary: Study Room
+                icon_color: blue
+                tap_action:
+                  action: navigate
+                  navigation_path: /dashboard-new/8
+                hold_action:
+                  action: none
+              - type: custom:mushroom-template-card
+                icon: mdi:texture-box
+                primary: Undisclosed
+                icon_color: blue
+                tap_action:
+                  action: navigate
+                  navigation_path: /dashboard-new/9
+                hold_action:
+                  action: none
+                aliases: []
+                area_id: undisclosed
+                name: Undisclosed
+                picture: null
+                hidden: false
+    theme: Mushroom Shadow
+  - icon: mdi:lightbulb-group
+    subview: false
+    title: Lights
+    path: lights
+    controllerCardOptions:
+      iconOn: mdi:lightbulb
+      iconOff: mdi:lightbulb-off
+      onService: light.turn_on
+      offService: light.turn_off
+    order: 2
+    hidden: false
+    cards:
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-title-card
+            title: All Lights
+            subtitle: >-
+              {% set entities =
+              [states['light.bedroom_light'],states['light.bedroom_night_lamp'],states['light.esphome_web_cb3fbd_rgb_light'],states['light.esphome_web_de1426_rgb_light'],states['light.outdoor_light'],states['light.esp_web_tools_example_de04c7_rgb_light'],states['light.study_room_light']]
+              %} {{ entities | selectattr('state','eq','on') | list | count }}
+              lights on
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-template-card
+                icon: mdi:lightbulb-off
+                layout: vertical
+                icon_color: red
+                tap_action:
+                  action: call-service
+                  service: light.turn_off
+                  target:
+                    entity_id:
+                      - light.bedroom_light
+                      - light.esphome_web_de1426_rgb_light
+                      - light.outdoor_light
+                      - light.esp_web_tools_example_de04c7_rgb_light
+                      - light.bedroom_night_lamp
+                      - light.study_room_light
+                      - light.esphome_web_cb3fbd_rgb_light
+                  data: {}
+              - type: custom:mushroom-template-card
+                icon: mdi:lightbulb
+                layout: vertical
+                icon_color: amber
+                tap_action:
+                  action: call-service
+                  service: light.turn_on
+                  target:
+                    entity_id:
+                      - light.bedroom_light
+                      - light.esphome_web_de1426_rgb_light
+                      - light.outdoor_light
+                      - light.esp_web_tools_example_de04c7_rgb_light
+                      - light.bedroom_night_lamp
+                      - light.study_room_light
+                      - light.esphome_web_cb3fbd_rgb_light
+                  data: {}
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Bedroom
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    icon: mdi:lightbulb-off
+                    layout: vertical
+                    icon_color: red
+                    tap_action:
+                      action: call-service
+                      service: light.turn_off
+                      target:
+                        area_id:
+                          - bedroom
+                      data: {}
+                  - type: custom:mushroom-template-card
+                    icon: mdi:lightbulb
+                    layout: vertical
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: light.turn_on
+                      target:
+                        area_id:
+                          - bedroom
+                      data: {}
+          - type: custom:mushroom-light-card
+            show_brightness_control: true
+            show_color_control: true
+            show_color_temp_control: true
+            use_light_color: true
+            double_tap_action:
+              action: call-service
+              service: light.turn_on
+              target:
+                entity_id: light.bedroom_light
+              data:
+                rgb_color:
+                  - 255
+                  - 255
+                  - 255
+            entity: light.bedroom_light
+          - type: custom:mushroom-light-card
+            show_brightness_control: true
+            show_color_control: true
+            show_color_temp_control: true
+            use_light_color: true
+            double_tap_action:
+              action: call-service
+              service: light.turn_on
+              target:
+                entity_id: light.bedroom_night_lamp
+              data:
+                rgb_color:
+                  - 255
+                  - 255
+                  - 255
+            entity: light.bedroom_night_lamp
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Kitchen
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    icon: mdi:lightbulb-off
+                    layout: vertical
+                    icon_color: red
+                    tap_action:
+                      action: call-service
+                      service: light.turn_off
+                      target:
+                        area_id:
+                          - kitchen
+                      data: {}
+                  - type: custom:mushroom-template-card
+                    icon: mdi:lightbulb
+                    layout: vertical
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: light.turn_on
+                      target:
+                        area_id:
+                          - kitchen
+                      data: {}
+          - type: custom:mushroom-light-card
+            show_brightness_control: true
+            show_color_control: true
+            show_color_temp_control: true
+            use_light_color: true
+            double_tap_action:
+              action: call-service
+              service: light.turn_on
+              target:
+                entity_id: light.esphome_web_cb3fbd_rgb_light
+              data:
+                rgb_color:
+                  - 255
+                  - 255
+                  - 255
+            entity: light.esphome_web_cb3fbd_rgb_light
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Outdoor
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    icon: mdi:lightbulb-off
+                    layout: vertical
+                    icon_color: red
+                    tap_action:
+                      action: call-service
+                      service: light.turn_off
+                      target:
+                        area_id:
+                          - outdoor
+                      data: {}
+                  - type: custom:mushroom-template-card
+                    icon: mdi:lightbulb
+                    layout: vertical
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: light.turn_on
+                      target:
+                        area_id:
+                          - outdoor
+                      data: {}
+          - type: custom:mushroom-light-card
+            show_brightness_control: true
+            show_color_control: true
+            show_color_temp_control: true
+            use_light_color: true
+            double_tap_action:
+              action: call-service
+              service: light.turn_on
+              target:
+                entity_id: light.outdoor_light
+              data:
+                rgb_color:
+                  - 255
+                  - 255
+                  - 255
+            entity: light.outdoor_light
+          - type: custom:mushroom-light-card
+            show_brightness_control: true
+            show_color_control: true
+            show_color_temp_control: true
+            use_light_color: true
+            double_tap_action:
+              action: call-service
+              service: light.turn_on
+              target:
+                entity_id: light.esphome_web_de1426_rgb_light
+              data:
+                rgb_color:
+                  - 255
+                  - 255
+                  - 255
+            entity: light.esphome_web_de1426_rgb_light
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Study Room
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    icon: mdi:lightbulb-off
+                    layout: vertical
+                    icon_color: red
+                    tap_action:
+                      action: call-service
+                      service: light.turn_off
+                      target:
+                        area_id:
+                          - study_room
+                      data: {}
+                  - type: custom:mushroom-template-card
+                    icon: mdi:lightbulb
+                    layout: vertical
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: light.turn_on
+                      target:
+                        area_id:
+                          - study_room
+                      data: {}
+          - type: custom:mushroom-light-card
+            show_brightness_control: true
+            show_color_control: true
+            show_color_temp_control: true
+            use_light_color: true
+            double_tap_action:
+              action: call-service
+              service: light.turn_on
+              target:
+                entity_id: light.study_room_light
+              data:
+                rgb_color:
+                  - 255
+                  - 255
+                  - 255
+            entity: light.study_room_light
+          - type: custom:mushroom-light-card
+            show_brightness_control: true
+            show_color_control: true
+            show_color_temp_control: true
+            use_light_color: true
+            double_tap_action:
+              action: call-service
+              service: light.turn_on
+              target:
+                entity_id: light.esp_web_tools_example_de04c7_rgb_light
+              data:
+                rgb_color:
+                  - 255
+                  - 255
+                  - 255
+            entity: light.esp_web_tools_example_de04c7_rgb_light
+    theme: Mushroom Shadow
+  - icon: mdi:fan
+    subview: false
+    title: Fans
+    path: fans
+    controllerCardOptions:
+      iconOn: mdi:fan
+      iconOff: mdi:fan-off
+      onService: fan.turn_on
+      offService: fan.turn_off
+    order: 3
+    hidden: false
+    cards:
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-title-card
+            title: All Fans
+            subtitle: >-
+              {% set entities =
+              [states['fan.bedroom_fan'],states['fan.study_room_fan']] %} {{
+              entities | selectattr('state','eq','on') | list | count }} fans on
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-template-card
+                icon: mdi:fan-off
+                layout: vertical
+                icon_color: red
+                tap_action:
+                  action: call-service
+                  service: fan.turn_off
+                  target:
+                    entity_id:
+                      - fan.bedroom_fan
+                      - fan.study_room_fan
+                  data: {}
+              - type: custom:mushroom-template-card
+                icon: mdi:fan
+                layout: vertical
+                icon_color: amber
+                tap_action:
+                  action: call-service
+                  service: fan.turn_on
+                  target:
+                    entity_id:
+                      - fan.bedroom_fan
+                      - fan.study_room_fan
+                  data: {}
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Bedroom
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    icon: mdi:fan-off
+                    layout: vertical
+                    icon_color: red
+                    tap_action:
+                      action: call-service
+                      service: fan.turn_off
+                      target:
+                        area_id:
+                          - bedroom
+                      data: {}
+                  - type: custom:mushroom-template-card
+                    icon: mdi:fan
+                    layout: vertical
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: fan.turn_on
+                      target:
+                        area_id:
+                          - bedroom
+                      data: {}
+          - type: custom:mushroom-fan-card
+            show_percentage_control: true
+            show_oscillate_control: true
+            icon_animation: true
+            entity: fan.bedroom_fan
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Study Room
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    icon: mdi:fan-off
+                    layout: vertical
+                    icon_color: red
+                    tap_action:
+                      action: call-service
+                      service: fan.turn_off
+                      target:
+                        area_id:
+                          - study_room
+                      data: {}
+                  - type: custom:mushroom-template-card
+                    icon: mdi:fan
+                    layout: vertical
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: fan.turn_on
+                      target:
+                        area_id:
+                          - study_room
+                      data: {}
+          - type: custom:mushroom-fan-card
+            show_percentage_control: true
+            show_oscillate_control: true
+            icon_animation: true
+            entity: fan.study_room_fan
+    theme: Mushroom Shadow
+  - icon: mdi:dip-switch
+    subview: false
+    title: Switches
+    path: switches
+    controllerCardOptions:
+      iconOn: mdi:power-plug
+      iconOff: mdi:power-plug-off
+      onService: switch.turn_on
+      offService: switch.turn_off
+    order: 5
+    hidden: false
+    cards:
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-title-card
+            title: All Switches
+            subtitle: >-
+              {% set entities =
+              [states['switch.esp_web_tools_example_716a9a_socket'],states['switch.esphome_web_cb3fbd_water_pump'],states['switch.esphome_web_cb3fbd_light'],states['switch.esp_web_tools_example_fc6b69_socket_1'],states['switch.esp_web_tools_example_fc6b69_socket_2']]
+              %} {{ entities | selectattr('state','eq','on') | list | count }}
+              switches on
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-template-card
+                icon: mdi:power-plug-off
+                layout: vertical
+                icon_color: red
+                tap_action:
+                  action: call-service
+                  service: switch.turn_off
+                  target:
+                    entity_id:
+                      - switch.assist_microphone_mute
+                      - switch.mushroom_pre_release
+                      - switch.mini_graph_card_pre_release
+                      - switch.hacs_pre_release
+                      - >-
+                        switch.auto_generating_mushroom_dashboard_strategy_pre_release
+                      - switch.mushroom_themes_pre_release
+                      - switch.hass_agent_pre_release
+                      - switch.smartthinq_lge_sensors_pre_release
+                      - switch.esp_web_tools_example_fc6b69_socket_1
+                      - switch.esp_web_tools_example_fc6b69_socket_2
+                      - switch.esphome_web_cb3fbd_water_pump
+                      - switch.esphome_web_cb3fbd_light
+                      - switch.esp_web_tools_example_716a9a_socket
+                      - switch.adguard_home_protection
+                      - switch.adguard_home_parental_control
+                      - switch.adguard_home_safe_search
+                      - switch.adguard_home_safe_browsing
+                      - switch.adguard_home_filtering
+                      - switch.adguard_home_query_log
+                  data: {}
+              - type: custom:mushroom-template-card
+                icon: mdi:power-plug
+                layout: vertical
+                icon_color: amber
+                tap_action:
+                  action: call-service
+                  service: switch.turn_on
+                  target:
+                    entity_id:
+                      - switch.assist_microphone_mute
+                      - switch.mushroom_pre_release
+                      - switch.mini_graph_card_pre_release
+                      - switch.hacs_pre_release
+                      - >-
+                        switch.auto_generating_mushroom_dashboard_strategy_pre_release
+                      - switch.mushroom_themes_pre_release
+                      - switch.hass_agent_pre_release
+                      - switch.smartthinq_lge_sensors_pre_release
+                      - switch.esp_web_tools_example_fc6b69_socket_1
+                      - switch.esp_web_tools_example_fc6b69_socket_2
+                      - switch.esphome_web_cb3fbd_water_pump
+                      - switch.esphome_web_cb3fbd_light
+                      - switch.esp_web_tools_example_716a9a_socket
+                      - switch.adguard_home_protection
+                      - switch.adguard_home_parental_control
+                      - switch.adguard_home_safe_search
+                      - switch.adguard_home_safe_browsing
+                      - switch.adguard_home_filtering
+                      - switch.adguard_home_query_log
+                  data: {}
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Bedroom
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    icon: mdi:power-plug-off
+                    layout: vertical
+                    icon_color: red
+                    tap_action:
+                      action: call-service
+                      service: switch.turn_off
+                      target:
+                        area_id:
+                          - bedroom
+                      data: {}
+                  - type: custom:mushroom-template-card
+                    icon: mdi:power-plug
+                    layout: vertical
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: switch.turn_on
+                      target:
+                        area_id:
+                          - bedroom
+                      data: {}
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.esp_web_tools_example_716a9a_socket
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Kitchen
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    icon: mdi:power-plug-off
+                    layout: vertical
+                    icon_color: red
+                    tap_action:
+                      action: call-service
+                      service: switch.turn_off
+                      target:
+                        area_id:
+                          - kitchen
+                      data: {}
+                  - type: custom:mushroom-template-card
+                    icon: mdi:power-plug
+                    layout: vertical
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: switch.turn_on
+                      target:
+                        area_id:
+                          - kitchen
+                      data: {}
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.esphome_web_cb3fbd_light
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.esphome_web_cb3fbd_water_pump
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Study Room
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    icon: mdi:power-plug-off
+                    layout: vertical
+                    icon_color: red
+                    tap_action:
+                      action: call-service
+                      service: switch.turn_off
+                      target:
+                        area_id:
+                          - study_room
+                      data: {}
+                  - type: custom:mushroom-template-card
+                    icon: mdi:power-plug
+                    layout: vertical
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: switch.turn_on
+                      target:
+                        area_id:
+                          - study_room
+                      data: {}
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.esp_web_tools_example_fc6b69_socket_1
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.esp_web_tools_example_fc6b69_socket_2
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: AdGuard
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    icon: mdi:power-plug-off
+                    layout: vertical
+                    icon_color: red
+                    tap_action:
+                      action: call-service
+                      service: switch.turn_off
+                      target:
+                        entity_id:
+                          - switch.adguard_home_filtering
+                          - switch.assist_microphone_mute
+                          - switch.adguard_home_parental_control
+                          - switch.adguard_home_protection
+                          - switch.adguard_home_query_log
+                          - switch.adguard_home_safe_browsing
+                          - switch.adguard_home_safe_search
+                      data: {}
+                  - type: custom:mushroom-template-card
+                    icon: mdi:power-plug
+                    layout: vertical
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: switch.turn_on
+                      target:
+                        entity_id:
+                          - switch.adguard_home_filtering
+                          - switch.assist_microphone_mute
+                          - switch.adguard_home_parental_control
+                          - switch.adguard_home_protection
+                          - switch.adguard_home_query_log
+                          - switch.adguard_home_safe_browsing
+                          - switch.adguard_home_safe_search
+                      data: {}
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.adguard_home_filtering
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.adguard_home_parental_control
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.adguard_home_protection
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.adguard_home_query_log
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.adguard_home_safe_browsing
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.adguard_home_safe_search
+    type: masonry
+    theme: Mushroom Shadow
+  - cards:
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Binary Sensors
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-entity-card
+                icon: mdi:power-cycle
+                animate: true
+                line_color: green
+                icon_color: green
+                entity: binary_sensor.esphome_web_716a9a_motion
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Fans
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    icon: mdi:fan-off
+                    layout: vertical
+                    icon_color: red
+                    tap_action:
+                      action: call-service
+                      service: fan.turn_off
+                      target:
+                        area_id:
+                          - bedroom
+                      data: {}
+                  - type: custom:mushroom-template-card
+                    icon: mdi:fan
+                    layout: vertical
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: fan.turn_on
+                      target:
+                        area_id:
+                          - bedroom
+                      data: {}
+          - type: custom:mushroom-fan-card
+            show_percentage_control: true
+            show_oscillate_control: true
+            icon_animation: true
+            entity: fan.bedroom_fan
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Lights
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    icon: mdi:lightbulb-off
+                    layout: vertical
+                    icon_color: red
+                    tap_action:
+                      action: call-service
+                      service: light.turn_off
+                      target:
+                        area_id:
+                          - bedroom
+                      data: {}
+                  - type: custom:mushroom-template-card
+                    icon: mdi:lightbulb
+                    layout: vertical
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: light.turn_on
+                      target:
+                        area_id:
+                          - bedroom
+                      data: {}
+          - type: custom:mushroom-light-card
+            show_brightness_control: true
+            show_color_control: true
+            show_color_temp_control: true
+            use_light_color: true
+            double_tap_action:
+              action: call-service
+              service: light.turn_on
+              target:
+                entity_id: light.bedroom_light
+              data:
+                rgb_color:
+                  - 255
+                  - 255
+                  - 255
+            entity: light.bedroom_light
+          - type: custom:mushroom-light-card
+            show_brightness_control: true
+            show_color_control: true
+            show_color_temp_control: true
+            use_light_color: true
+            double_tap_action:
+              action: call-service
+              service: light.turn_on
+              target:
+                entity_id: light.bedroom_night_lamp
+              data:
+                rgb_color:
+                  - 255
+                  - 255
+                  - 255
+            entity: light.bedroom_night_lamp
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Sensors
+          - type: vertical-stack
+            cards:
+              - type: custom:mini-graph-card
+                icon: mdi:information
+                animate: true
+                entities:
+                  - sensor.esphome_web_716a9a_temperature
+                show:
+                  labels: true
+                color_thresholds:
+                  - value: 28
+                    color: "#2196F3"
+                  - value: 30
+                    color: "#d35400"
+                  - value: 32
+                    color: "#c0392b"
+              - type: custom:mini-graph-card
+                icon: mdi:information
+                animate: true
+                entities:
+                  - sensor.esphome_web_716a9a_humidity
+                entity: sensor.esphome_web_716a9a_humidity
+                show:
+                  labels: true
+                color_thresholds:
+                  - value: 50
+                    color: "#4CAF50"
+                  - value: 60
+                    color: "#d35400"
+                  - value: 80
+                    color: "#c0392b"
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Switches
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    icon: mdi:power-plug-off
+                    layout: vertical
+                    icon_color: red
+                    tap_action:
+                      action: call-service
+                      service: switch.turn_off
+                      target:
+                        area_id:
+                          - bedroom
+                      data: {}
+                  - type: custom:mushroom-template-card
+                    icon: mdi:power-plug
+                    layout: vertical
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: switch.turn_on
+                      target:
+                        area_id:
+                          - bedroom
+                      data: {}
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.esp_web_tools_example_716a9a_socket
+    title: Bedroom
+    icon: mdi:bed-king-outline
+    theme: Mushroom Shadow
+    subview: true
+  - cards:
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Lights
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    icon: mdi:lightbulb-off
+                    layout: vertical
+                    icon_color: red
+                    tap_action:
+                      action: call-service
+                      service: light.turn_off
+                      target:
+                        area_id:
+                          - kitchen
+                      data: {}
+                  - type: custom:mushroom-template-card
+                    icon: mdi:lightbulb
+                    layout: vertical
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: light.turn_on
+                      target:
+                        area_id:
+                          - kitchen
+                      data: {}
+          - type: custom:mushroom-light-card
+            show_brightness_control: true
+            show_color_control: true
+            show_color_temp_control: true
+            use_light_color: true
+            double_tap_action:
+              action: call-service
+              service: light.turn_on
+              target:
+                entity_id: light.esphome_web_cb3fbd_rgb_light
+              data:
+                rgb_color:
+                  - 255
+                  - 255
+                  - 255
+            entity: light.esphome_web_cb3fbd_rgb_light
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Sensors
+          - type: vertical-stack
+            cards:
+              - type: custom:mini-graph-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entities:
+                  - sensor.esphome_web_cb3fbd_water_tank_empty_level
+                entity: sensor.esphome_web_cb3fbd_water_tank_empty_level
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Switches
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    icon: mdi:power-plug-off
+                    layout: vertical
+                    icon_color: red
+                    tap_action:
+                      action: call-service
+                      service: switch.turn_off
+                      target:
+                        area_id:
+                          - kitchen
+                      data: {}
+                  - type: custom:mushroom-template-card
+                    icon: mdi:power-plug
+                    layout: vertical
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: switch.turn_on
+                      target:
+                        area_id:
+                          - kitchen
+                      data: {}
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.esphome_web_cb3fbd_light
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.esphome_web_cb3fbd_water_pump
+    title: Kitchen
+    icon: mdi:food
+    theme: Mushroom Shadow
+    subview: true
+  - cards:
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Media Players
+          - type: custom:mushroom-media-player-card
+            icon: mdi:help-circle
+            use_media_info: true
+            media_controls:
+              - on_off
+              - play_pause_stop
+            show_volume_level: true
+            volume_controls:
+              - volume_mute
+              - volume_set
+              - volume_buttons
+            entity: media_player.jio_set_top_box
+          - type: custom:mushroom-media-player-card
+            icon: mdi:help-circle
+            use_media_info: true
+            media_controls:
+              - on_off
+              - play_pause_stop
+            show_volume_level: true
+            volume_controls:
+              - volume_mute
+              - volume_set
+              - volume_buttons
+            entity: media_player.lg_webos_smart_tv
+      - type: custom:lg-remote-control
+        entity: media_player.lg_webos_smart_tv
+        dimensions:
+          border_width: 1px
+        name: Magic Remote
+    title: Living Room
+    icon: mdi:television
+    theme: Mushroom Shadow
+    subview: true
+  - cards:
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Binary Sensors
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-entity-card
+                icon: mdi:power-cycle
+                animate: true
+                line_color: green
+                icon_color: green
+                entity: binary_sensor.esphome_web_de1426_water_pump
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Lights
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    icon: mdi:lightbulb-off
+                    layout: vertical
+                    icon_color: red
+                    tap_action:
+                      action: call-service
+                      service: light.turn_off
+                      target:
+                        area_id:
+                          - outdoor
+                      data: {}
+                  - type: custom:mushroom-template-card
+                    icon: mdi:lightbulb
+                    layout: vertical
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: light.turn_on
+                      target:
+                        area_id:
+                          - outdoor
+                      data: {}
+          - type: custom:mushroom-light-card
+            show_brightness_control: true
+            show_color_control: true
+            show_color_temp_control: true
+            use_light_color: true
+            double_tap_action:
+              action: call-service
+              service: light.turn_on
+              target:
+                entity_id: light.outdoor_light
+              data:
+                rgb_color:
+                  - 255
+                  - 255
+                  - 255
+            entity: light.outdoor_light
+          - type: custom:mushroom-light-card
+            show_brightness_control: true
+            show_color_control: true
+            show_color_temp_control: true
+            use_light_color: true
+            double_tap_action:
+              action: call-service
+              service: light.turn_on
+              target:
+                entity_id: light.esphome_web_de1426_rgb_light
+              data:
+                rgb_color:
+                  - 255
+                  - 255
+                  - 255
+            entity: light.esphome_web_de1426_rgb_light
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Sensors
+          - type: vertical-stack
+            cards:
+              - type: custom:mini-graph-card
+                icon: mdi:information
+                animate: true
+                entities:
+                  - sensor.esphome_web_de1426_water_tank_empty_level
+                entity: sensor.esphome_web_de1426_water_tank_empty_level
+                show:
+                  labels: true
+                color_thresholds:
+                  - value: 0.5
+                    color: "#f39c12"
+                  - value: 0.75
+                    color: "#d35400"
+                  - value: 1.5
+                    color: "#c0392b"
+              - type: custom:mini-graph-card
+                icon: mdi:information
+                animate: true
+                entities:
+                  - sensor.esp_web_tools_example_de04c7_temperature
+                entity: sensor.esp_web_tools_example_de04c7_temperature
+                show:
+                  labels: true
+                color_thresholds:
+                  - value: 28
+                    color: "#2196F3"
+                  - value: 30
+                    color: "#d35400"
+                  - value: 32
+                    color: "#c0392b"
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Hydro Utility
+          - type: entity
+            entity: valve.outdoor_water_pump
+          - type: custom:mushroom-entity-card
+            icon: mdi:av-timer
+            icon_color: blue-grey
+            entity: automation.water_pump_timer
+          - type: custom:mushroom-number-card
+            entity: input_number.water_pump_timer
+    title: Outdoor
+    icon: mdi:gate-open
+    theme: Mushroom Shadow
+    subview: true
+  - cards:
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Binary Sensors
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-entity-card
+                icon: mdi:power-cycle
+                animate: true
+                line_color: green
+                icon_color: green
+                entity: binary_sensor.esp_web_tools_example_079f55_motion
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Fans
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    icon: mdi:fan-off
+                    layout: vertical
+                    icon_color: red
+                    tap_action:
+                      action: call-service
+                      service: fan.turn_off
+                      target:
+                        area_id:
+                          - study_room
+                      data: {}
+                  - type: custom:mushroom-template-card
+                    icon: mdi:fan
+                    layout: vertical
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: fan.turn_on
+                      target:
+                        area_id:
+                          - study_room
+                      data: {}
+          - type: custom:mushroom-fan-card
+            show_percentage_control: true
+            show_oscillate_control: true
+            icon_animation: true
+            entity: fan.study_room_fan_2
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Lights
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    icon: mdi:lightbulb-off
+                    layout: vertical
+                    icon_color: red
+                    tap_action:
+                      action: call-service
+                      service: light.turn_off
+                      target:
+                        area_id:
+                          - study_room
+                      data: {}
+                  - type: custom:mushroom-template-card
+                    icon: mdi:lightbulb
+                    layout: vertical
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: light.turn_on
+                      target:
+                        area_id:
+                          - study_room
+                      data: {}
+          - type: custom:mushroom-light-card
+            show_brightness_control: true
+            show_color_control: true
+            show_color_temp_control: true
+            use_light_color: true
+            double_tap_action:
+              action: call-service
+              service: light.turn_on
+              target:
+                entity_id: light.study_room_light
+              data:
+                rgb_color:
+                  - 255
+                  - 255
+                  - 255
+            entity: light.study_room_light
+          - type: custom:mushroom-light-card
+            show_brightness_control: true
+            show_color_control: true
+            show_color_temp_control: true
+            use_light_color: true
+            double_tap_action:
+              action: call-service
+              service: light.turn_on
+              target:
+                entity_id: light.esp_web_tools_example_de04c7_rgb_light
+              data:
+                rgb_color:
+                  - 255
+                  - 255
+                  - 255
+            entity: light.esp_web_tools_example_de04c7_rgb_light
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Numbers
+          - type: custom:mushroom-number-card
+            entity: number.esp_web_tools_example_de04c7_servo_control
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Sensors
+          - type: vertical-stack
+            cards:
+              - type: custom:mini-graph-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entities:
+                  - sensor.esp_web_tools_example_079f55_temperature
+                entity: sensor.esp_web_tools_example_079f55_temperature
+                show:
+                  labels: true
+                color_thresholds:
+                  - value: 28
+                    color: "#2196F3"
+                  - value: 30
+                    color: "#d35400"
+                  - value: 32
+                    color: "#c0392b"
+              - type: custom:mini-graph-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entities:
+                  - sensor.esp_web_tools_example_079f55_humidity
+                entity: sensor.esp_web_tools_example_079f55_humidity
+                show:
+                  labels: true
+                color_thresholds:
+                  - value: 50
+                    color: "#4CAF50"
+                  - value: 60
+                    color: "#d35400"
+                  - value: 80
+                    color: "#c0392b"
+              - type: custom:mini-graph-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entities:
+                  - sensor.esp_web_tools_example_079f55_temperature
+                entity: sensor.esp_web_tools_example_079f55_temperature
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Switches
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    icon: mdi:power-plug-off
+                    layout: vertical
+                    icon_color: red
+                    tap_action:
+                      action: call-service
+                      service: switch.turn_off
+                      target:
+                        area_id:
+                          - study_room
+                      data: {}
+                  - type: custom:mushroom-template-card
+                    icon: mdi:power-plug
+                    layout: vertical
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: switch.turn_on
+                      target:
+                        area_id:
+                          - study_room
+                      data: {}
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.esp_web_tools_example_079f55_socket_1
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.esp_web_tools_example_079f55_socket_2
+    type: masonry
+    title: Study Room
+    icon: mdi:book-open-blank-variant-outline
+    theme: Mushroom Shadow
+    subview: true
+  - cards:
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Binary Sensors
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-entity-card
+                icon: mdi:power-cycle
+                animate: true
+                line_color: green
+                icon_color: green
+                entity: binary_sensor.abhas_iphone_focus
+              - type: custom:mushroom-entity-card
+                icon: mdi:power-cycle
+                animate: true
+                line_color: green
+                icon_color: green
+                entity: binary_sensor.abhas_macbook_air_active
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-entity-card
+                icon: mdi:power-cycle
+                animate: true
+                line_color: green
+                icon_color: green
+                entity: binary_sensor.abhas_macbook_air_audio_input_in_use
+              - type: custom:mushroom-entity-card
+                icon: mdi:power-cycle
+                animate: true
+                line_color: green
+                icon_color: green
+                entity: binary_sensor.abhas_macbook_air_audio_output_in_use
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-entity-card
+                icon: mdi:power-cycle
+                animate: true
+                line_color: green
+                icon_color: green
+                entity: binary_sensor.abhas_macbook_air_camera_in_use
+              - type: custom:mushroom-entity-card
+                icon: mdi:power-cycle
+                animate: true
+                line_color: green
+                icon_color: green
+                entity: binary_sensor.abhas_macbook_air_focus
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-entity-card
+                icon: mdi:power-cycle
+                animate: true
+                line_color: green
+                icon_color: green
+                entity: binary_sensor.assist_microphone_assist_in_progress
+              - type: custom:mushroom-entity-card
+                icon: mdi:power-cycle
+                animate: true
+                line_color: green
+                icon_color: green
+                entity: binary_sensor.dineshs_iphone_focus
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-entity-card
+                icon: mdi:power-cycle
+                animate: true
+                line_color: green
+                icon_color: green
+                entity: binary_sensor.dineshs_iphone_focus_2
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Media Players
+          - type: custom:mushroom-media-player-card
+            icon: mdi:help-circle
+            use_media_info: true
+            media_controls:
+              - on_off
+              - play_pause_stop
+            show_volume_level: true
+            volume_controls:
+              - volume_mute
+              - volume_set
+              - volume_buttons
+            entity: media_player.desktop_i7js7jf
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Numbers
+          - type: custom:mushroom-number-card
+            entity: number.assist_microphone_auto_gain
+          - type: custom:mushroom-number-card
+            entity: number.assist_microphone_mic_volume
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Sensors
+          - type: vertical-stack
+            cards:
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_iphone_activity
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_iphone_app_version
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_iphone_average_active_pace
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_iphone_battery_level
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_iphone_battery_state
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_iphone_bssid
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_iphone_connection_type
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_iphone_distance
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_iphone_floors_ascended
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_iphone_floors_descended
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_iphone_geocoded_location
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_iphone_last_update_trigger
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_iphone_location_permission
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_iphone_sim_1
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_iphone_sim_2
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_iphone_ssid
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_iphone_steps
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_iphone_storage
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_macbook_air_active_audio_input
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_macbook_air_active_audio_output
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_macbook_air_active_camera
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_macbook_air_app_version
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_macbook_air_bssid
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_macbook_air_connection_type
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_macbook_air_displays
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_macbook_air_frontmost_app
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_macbook_air_geocoded_location
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_macbook_air_internal_battery_level
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_macbook_air_internal_battery_state
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_macbook_air_last_update_trigger
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_macbook_air_location_permission
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_macbook_air_primary_display_id
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_macbook_air_primary_display_name
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_macbook_air_ssid
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.abhas_macbook_air_storage
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.server_satellite_cpuload
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.server_cpuload
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.server_satellite_currentclockspeed
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.server_currentclockspeed
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_activity
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_activity_2
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_app_version
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_average_active_pace
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_average_active_pace_2
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_battery_level
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_battery_level_2
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_battery_state
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_battery_state_2
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_bssid
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_bssid_2
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_connection_type
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_connection_type_2
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_distance
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_distance_2
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_floors_ascended
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_floors_ascended_2
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_floors_descended
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_floors_descended_2
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_geocoded_location
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_geocoded_location_2
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_last_update_trigger
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_last_update_trigger_2
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_location_permission
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_sim_1
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_sim_1_2
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_sim_2
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_sim_2_2
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_ssid
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_ssid_2
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_steps
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_steps_2
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_storage
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.dineshs_iphone_storage_2
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: >-
+                  sensor.server_satellite_network_3a666a495b444846972026a2c667cc9d
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: >-
+                  sensor.server_satellite_network_2364ccb9a3a34769aa1e851d7617eeda
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.server_gputemperature
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: >-
+                  sensor.server_satellite_network_bb2aefc50000471383820da70724bfb9
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: >-
+                  sensor.server_satellite_network_6b42327ddca148a19d88732d1036768d
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: >-
+                  sensor.server_satellite_network_c0578d728e2c11edb45c806e6f6e6963
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.server_satellite_network_total_network_card_count
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.sun_next_dawn
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.sun_next_dusk
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.sun_next_midnight
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.sun_next_noon
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.sun_next_rising
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.sun_next_setting
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.moon_phase
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.realme_narzo_70_pro_5g_battery_level
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.realme_narzo_70_pro_5g_battery_state
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.realme_narzo_70_pro_5g_charger_type
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.samsung_j7_battery_level
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.samsung_j7_battery_state
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.samsung_j7_charger_type
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: >-
+                  sensor.server_satellite_network_3721766942da4657a55b0d995d328250
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: sensor.uptime
+              - type: custom:mushroom-entity-card
+                icon: mdi:information
+                animate: true
+                line_color: green
+                entity: >-
+                  sensor.server_satellite_network_6e6c583e521d4562a3ecd2320f680da1
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Switches
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    icon: mdi:power-plug-off
+                    layout: vertical
+                    icon_color: red
+                    tap_action:
+                      action: call-service
+                      service: switch.turn_off
+                      target:
+                        entity_id:
+                          - switch.assist_microphone_mute
+                      data: {}
+                  - type: custom:mushroom-template-card
+                    icon: mdi:power-plug
+                    layout: vertical
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: switch.turn_on
+                      target:
+                        entity_id:
+                          - switch.assist_microphone_mute
+                      data: {}
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.assist_microphone_mute
+    title: "Miscellaneous "
+    icon: mdi:trash-can-outline
+    theme: Mushroom Shadow
+    subview: true
+  - title: Admin Console
+    path: admin-console
+    icon: mdi:alien-outline
+    theme: Mushroom Shadow
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: AdGuard
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    icon: mdi:power-plug-off
+                    layout: vertical
+                    icon_color: red
+                    tap_action:
+                      action: call-service
+                      service: switch.turn_off
+                      target:
+                        entity_id:
+                          - switch.adguard_home_filtering
+                          - switch.assist_microphone_mute
+                          - switch.adguard_home_parental_control
+                          - switch.adguard_home_protection
+                          - switch.adguard_home_query_log
+                          - switch.adguard_home_safe_browsing
+                          - switch.adguard_home_safe_search
+                      data: {}
+                  - type: custom:mushroom-template-card
+                    icon: mdi:power-plug
+                    layout: vertical
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: switch.turn_on
+                      target:
+                        entity_id:
+                          - switch.adguard_home_filtering
+                          - switch.assist_microphone_mute
+                          - switch.adguard_home_parental_control
+                          - switch.adguard_home_protection
+                          - switch.adguard_home_query_log
+                          - switch.adguard_home_safe_browsing
+                          - switch.adguard_home_safe_search
+                      data: {}
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.adguard_home_filtering
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.adguard_home_parental_control
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.adguard_home_protection
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.adguard_home_query_log
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.adguard_home_safe_browsing
+          - type: custom:mushroom-entity-card
+            tap_action:
+              action: toggle
+            entity: switch.adguard_home_safe_search
+      - type: entities
+        entities:
+          - entity: sensor.adguard_home_average_processing_speed
+            name: Average processing speed
+          - entity: sensor.adguard_home_dns_queries
+            name: DNS queries
+          - entity: sensor.adguard_home_dns_queries_blocked
+            name: DNS queries blocked
+          - entity: sensor.adguard_home_dns_queries_blocked_ratio
+            name: DNS queries blocked ratio
+          - entity: sensor.adguard_home_parental_control_blocked
+            name: Parental control blocked
+          - entity: sensor.adguard_home_safe_browsing_blocked
+            name: Safe browsing blocked
+          - entity: sensor.adguard_home_safe_searches_enforced
+            name: Safe searches enforced
+        title: AdGuard Home
+      - type: iframe
+        url: http://192.168.1.1
+        aspect_ratio: 170%
+        title: Jio Air Fiber
+    subview: false
+    visible:
+      - user: f211399523ed4a739618880f8a0662f3
+      - user: 7f440c3582704263b07bee4b8b9d22c7
+      - user: b42785d4ecd04917835971428485cbc0
+      - user: 6a65ab2dbef44151b40b0b43def0ec23
+      - user: 7e5126d3e0084c8192946704f51158bd
+    type: masonry
