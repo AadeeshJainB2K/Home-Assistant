@@ -1,0 +1,90 @@
+substitutions:
+  name: esp-web-tools-example-c809af
+  friendly_name: Server Room
+packages:
+  esphome.esp_web_tools_example: github://esphome/example-configs/esp-web-tools/esp8266.yaml@main
+esphome:
+  name: ${name}
+  name_add_mac_suffix: false
+  friendly_name: ${friendly_name}
+api:
+  encryption:
+    key: your api key
+
+binary_sensor:
+  - platform: gpio
+    id: fanInput
+    pin:
+      number: GPIO14
+      inverted: True
+      mode:
+        input: true
+        pullup: true
+    on_press:
+      then:
+        - switch.turn_on: fanSwitch
+    on_release:
+      then:
+        - switch.turn_off: fanSwitch
+
+  - platform: gpio
+    id: lightInput
+    pin:
+      number: GPIO5
+      inverted: True
+      mode:
+        input: true
+        pullup: true
+    on_press:
+      then:
+        - switch.turn_on: lightSwitch
+    on_release:
+      then:
+        - switch.turn_off: lightSwitch
+
+switch:
+  - platform: gpio
+    name: "Fan"
+    pin: GPIO16
+    id: fanSwitch
+    inverted: True
+
+  - platform: gpio
+    name: "Light"
+    pin: GPIO4
+    id: lightSwitch
+    inverted: True
+
+i2c:
+  sda: GPIO13
+  scl: GPIO12
+
+time:
+  - platform: homeassistant
+    id: home_time
+
+display:
+  - platform: lcd_pcf8574
+    dimensions: 16x2
+    address: 0x27
+    lambda: |-
+      it.printf(0, 0,"T:%.1f%cC H:%.1f%%", id(temperature).state,(char)223, id(humidity).state);
+      it.strftime(0, 1,"Time:%I:%M:%S %p", id(home_time).now());
+
+sensor:
+  - platform: dht
+    pin:
+      number: GPIO3
+      mode:
+        input: True
+    temperature:
+      name: "Temperature"
+      id: temperature
+    humidity:
+      name: "Humidity"
+      id: humidity
+    update_interval: 5s
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
