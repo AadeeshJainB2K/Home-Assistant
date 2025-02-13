@@ -23,9 +23,11 @@ binary_sensor:
     on_press:
       then:
         - switch.turn_on: fanSwitch
+        - script.execute: show_fan_on_message
     on_release:
       then:
         - switch.turn_off: fanSwitch
+        - script.execute: show_fan_off_message
 
   - platform: gpio
     id: lightInput
@@ -38,9 +40,11 @@ binary_sensor:
     on_press:
       then:
         - switch.turn_on: lightSwitch
+        - script.execute: show_light_on_message
     on_release:
       then:
         - switch.turn_off: lightSwitch
+        - script.execute: show_light_off_message
 
 switch:
   - platform: gpio
@@ -55,6 +59,17 @@ switch:
     id: lightSwitch
     inverted: True
 
+  - platform: template
+    name: "LCD Backlight"
+    id: lcd_backlight
+    optimistic: true
+    turn_on_action:
+      - lambda: |-
+          id(my_lcd).backlight();
+    turn_off_action:
+      - lambda: |-
+          id(my_lcd).no_backlight();
+
 i2c:
   sda: GPIO13
   scl: GPIO12
@@ -65,11 +80,110 @@ time:
 
 display:
   - platform: lcd_pcf8574
+    id: my_lcd
     dimensions: 16x2
     address: 0x27
     lambda: |-
-      it.printf(0, 0,"T:%.1f%cC H:%.1f%%", id(temperature).state,(char)223, id(humidity).state);
-      it.strftime(0, 1,"Time:%I:%M:%S %p", id(home_time).now());
+      if (id(display_message).state == "") {
+        switch (id(weather_index)) {
+          case 0:
+            it.printf(0, 1,"T:%.1f%cC H:%.1f%%", id(temperature).state,(char)223, id(humidity).state);
+            break;
+          case 1:
+            if (id(uv_index).state >= 11) {
+              it.printf(0, 1, "UV:%.1f (Extreme)", id(uv_index).state);
+            } else if (id(uv_index).state >= 8) {
+              it.printf(0, 1, "UV:%.1f (Very High)", id(uv_index).state);
+            } else if (id(uv_index).state >= 6) {
+              it.printf(0, 1, "UV:%.1f (High)", id(uv_index).state);
+            } else if (id(uv_index).state >= 3) {
+              it.printf(0, 1, "UV:%.1f(Moderate)", id(uv_index).state);
+            } else {
+              it.printf(0, 1, "UV:%.1f (Low)", id(uv_index).state);
+            }
+            break;
+          case 2:
+            it.printf(0, 1, "Rain:%.1fmm", id(rain).state);
+            break;
+          case 3:
+            it.printf(0, 1,"Wxr:%s", id(weather_condition).state.c_str());
+            break;
+          case 4:
+            it.printf(0, 1,"T:%.1f%cC H:%.1f%%", id(temperature).state,(char)223, id(humidity).state);
+            break;
+          case 5:
+            it.strftime(0, 1, "%A", id(home_time).now());
+            break;
+          case 6:
+            it.strftime(0, 1, "%dth %b(%m) %y", id(home_time).now());
+            break;
+          case 7:
+            it.printf(0, 1, "FeelsLike:%.1f%cC", id(feels_like_temp).state, (char)223);
+            break;
+          case 8:
+            it.printf(0, 1, "Rain Prob:%.0f%%", id(thunderstorm_probability).state);
+            break;
+        }
+      } else {
+        it.printf(0, 1, "%s", id(display_message).state.c_str());
+      }
+      it.strftime(0, 0,"Time:%I:%M:%S %p", id(home_time).now());
+
+text_sensor:
+  - platform: template
+    id: display_message
+    internal: true
+    update_interval: never
+
+  - platform: homeassistant
+    id: weather_condition
+    entity_id: sensor.openweathermap_condition
+    internal: true
+
+script:
+  - id: show_fan_on_message
+    mode: restart
+    then:
+      - text_sensor.template.publish:
+          id: display_message
+          state: "Fan is ON"
+      - delay: 2s
+      - text_sensor.template.publish:
+          id: display_message
+          state: ""
+
+  - id: show_fan_off_message
+    mode: restart
+    then:
+      - text_sensor.template.publish:
+          id: display_message
+          state: "Fan is OFF"
+      - delay: 2s
+      - text_sensor.template.publish:
+          id: display_message
+          state: ""
+
+  - id: show_light_on_message
+    mode: restart
+    then:
+      - text_sensor.template.publish:
+          id: display_message
+          state: "Light is ON"
+      - delay: 2s
+      - text_sensor.template.publish:
+          id: display_message
+          state: ""
+
+  - id: show_light_off_message
+    mode: restart
+    then:
+      - text_sensor.template.publish:
+          id: display_message
+          state: "Light is OFF"
+      - delay: 2s
+      - text_sensor.template.publish:
+          id: display_message
+          state: ""
 
 sensor:
   - platform: dht
@@ -84,6 +198,38 @@ sensor:
       name: "Humidity"
       id: humidity
     update_interval: 5s
+
+  - platform: homeassistant
+    id: uv_index
+    entity_id: sensor.home_uv_index_day_0
+    internal: true
+
+  - platform: homeassistant
+    id: rain
+    entity_id: sensor.openweathermap_rain
+    internal: true
+
+  - platform: homeassistant
+    id: feels_like_temp
+    entity_id: sensor.openweathermap_feels_like_temperature
+    internal: true
+
+  - platform: homeassistant
+    id: thunderstorm_probability
+    entity_id: sensor.home_thunderstorm_probability_day_0
+    internal: true
+
+globals:
+  - id: weather_index
+    type: int
+    restore_value: no
+    initial_value: "0"
+
+interval:
+  - interval: 3s
+    then:
+      - lambda: |-
+          id(weather_index) = (id(weather_index) + 1) % 9;
 
 wifi:
   ssid: !secret wifi_ssid
