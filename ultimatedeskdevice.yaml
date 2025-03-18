@@ -1,0 +1,755 @@
+substitutions:
+  name: esp-web-tools-example-c809af
+  friendly_name: Study Room
+
+packages:
+  esphome.esp_web_tools_example: github://esphome/example-configs/esp-web-tools/esp8266.yaml@main
+
+esphome:
+  name: ${name}
+  name_add_mac_suffix: false
+  friendly_name: ${friendly_name}
+  on_boot:
+    priority: -10
+    then:
+      - switch.turn_on: lcd_backlight
+      - switch.turn_on: alarm_switch
+
+api:
+  encryption:
+    key: LVuvpQ8/6duqQl4/dStZs3cug3kYSuAh012ADOCX+8w=
+
+binary_sensor:
+  - platform: gpio
+    id: fanInput
+    pin:
+      number: GPIO14
+      inverted: True
+      mode:
+        input: true
+        pullup: true
+    on_press:
+      then:
+        - switch.turn_on: fanSwitch
+        - script.execute: show_fan_on_message
+    on_release:
+      then:
+        - switch.turn_off: fanSwitch
+        - script.execute: show_fan_off_message
+
+  - platform: gpio
+    id: lightInput
+    pin:
+      number: GPIO5
+      inverted: True
+      mode:
+        input: true
+        pullup: true
+    on_press:
+      then:
+        - switch.turn_on: lightSwitch
+        - script.execute: show_light_on_message
+    on_release:
+      then:
+        - lambda: |-
+            // Mark this as a physical off request.
+            id(physical_light_off) = 1;
+        - switch.turn_off: lightSwitch
+        - script.execute: show_light_off_message
+
+  - platform: template
+    name: "Timer Active"
+    id: timer_active
+    internal: true
+
+  - platform: template
+    name: "Timer Completed"
+    id: timer_completed
+    internal: true
+
+  - platform: template
+    name: "Stopwatch Active"
+    id: stopwatch_active
+    internal: true
+
+  - platform: template
+    name: "Alarm Mode Active"
+    id: alarm_mode_active
+    lambda: |-
+      return id(timer_display_mode).state == 4;
+
+switch:
+  - platform: gpio
+    name: "Fan"
+    pin: GPIO16
+    id: fanSwitch
+    inverted: True
+
+  - platform: gpio
+    name: "Light"
+    pin: GPIO4
+    id: lightSwitch
+    inverted: True
+    on_turn_off:
+      then:
+        - lambda: |-
+            /* In Alarm Mode, digital off commands (from Home Assistant) are ignored.
+               Only a physical off (set by the binary sensor via 'physical_light_off')
+               will allow the light to turn off and exit alarm mode. */
+            if (id(timer_display_mode).state == 4) {
+              if (id(physical_light_off) == 1) {
+                // Physical off: exit alarm mode, allow light to turn off,
+                // and always turn on the LCD backlight after exiting alarm mode.
+                id(alarm_triggered) = 0;
+                id(timer_display_mode).publish_state(0);
+                id(physical_light_off) = 0;
+                id(my_lcd).backlight();
+              } else {
+                // Digital off: force the light to remain on.
+                id(lightSwitch).turn_on();
+              }
+            }
+  - platform: template
+    name: "LCD Backlight"
+    id: lcd_backlight
+    optimistic: true
+    turn_on_action:
+      - lambda: |-
+          id(my_lcd).backlight();
+    turn_off_action:
+      - lambda: |-
+          id(my_lcd).no_backlight();
+
+  - platform: template
+    name: "Message Board Mode"
+    id: message_board_mode
+    optimistic: true
+    turn_on_action:
+      - sensor.template.publish:
+          id: timer_display_mode
+          state: 3
+      - lambda: |-
+          // Reset scroll offset so the beginning of the message is visible.
+          id(message_scroll_offset) = 0;
+    turn_off_action:
+      - sensor.template.publish:
+          id: timer_display_mode
+          state: 0
+
+  - platform: template
+    name: "Alarm"
+    id: alarm_switch
+    optimistic: true
+    turn_on_action:
+      - lambda: |-
+          id(alarm_enabled) = true;
+      - text_sensor.template.publish:
+          id: display_message
+          state: "Alarm Enabled"
+      - delay: 2s
+      - text_sensor.template.publish:
+          id: display_message
+          state: ""
+    turn_off_action:
+      - lambda: |-
+          id(alarm_enabled) = false;
+      - text_sensor.template.publish:
+          id: display_message
+          state: "Alarm Disabled"
+      - delay: 2s
+      - text_sensor.template.publish:
+          id: display_message
+          state: ""
+
+  # Timer and Stopwatch Controls as momentary template switches
+  - platform: template
+    name: "Start Timer"
+    id: start_timer_switch
+    optimistic: true
+    turn_on_action:
+      - script.execute: start_timer_script
+      - delay: 500ms
+      - switch.turn_off: start_timer_switch
+
+  - platform: template
+    name: "Pause Timer"
+    id: pause_timer_switch
+    optimistic: true
+    turn_on_action:
+      - script.execute: pause_timer_script
+      - delay: 500ms
+      - switch.turn_off: pause_timer_switch
+
+  - platform: template
+    name: "Reset Timer"
+    id: reset_timer_switch
+    optimistic: true
+    turn_on_action:
+      - script.execute: reset_timer_script
+      - delay: 500ms
+      - switch.turn_off: reset_timer_switch
+
+  - platform: template
+    name: "Start Stopwatch"
+    id: start_stopwatch_switch
+    optimistic: true
+    turn_on_action:
+      - script.execute: start_stopwatch_script
+      - delay: 500ms
+      - switch.turn_off: start_stopwatch_switch
+
+  - platform: template
+    name: "Pause Stopwatch"
+    id: pause_stopwatch_switch
+    optimistic: true
+    turn_on_action:
+      - script.execute: pause_stopwatch_script
+      - delay: 500ms
+      - switch.turn_off: pause_stopwatch_switch
+
+  - platform: template
+    name: "Reset Stopwatch"
+    id: reset_stopwatch_switch
+    optimistic: true
+    turn_on_action:
+      - script.execute: reset_stopwatch_script
+      - delay: 500ms
+      - switch.turn_off: reset_stopwatch_switch
+
+number:
+  - platform: template
+    name: "Timer Duration"
+    id: timer_duration
+    min_value: 1
+    max_value: 120
+    step: 1
+    initial_value: 25
+    unit_of_measurement: "min"
+    mode: slider
+    optimistic: true
+
+i2c:
+  sda: GPIO13
+  scl: GPIO12
+
+time:
+  - platform: homeassistant
+    id: home_time
+  - platform: sntp
+    id: internet_time
+    timezone: "IST-5:30"
+
+display:
+  - platform: lcd_pcf8574
+    id: my_lcd
+    dimensions: 16x2
+    address: 0x27
+    lambda: |-
+      // Priority: show override message if available.
+      if (id(display_message).state != "") {
+        it.printf(0, 1, "%s", id(display_message).state.c_str());
+        if (id(home_time).now().is_valid()) {
+          it.strftime(0, 0, "Time:%I:%M:%S %p", id(home_time).now());
+        } else {
+          it.strftime(0, 0, "Time:%I:%M:%S %p", id(internet_time).now());
+        }
+      }
+      // Display based on mode:
+      else if (id(timer_display_mode).state > 0) {
+        if (id(timer_display_mode).state == 1) {
+          // Timer Mode:
+          it.printf(0, 0, "Timer: %02d:%02d:%02d", (int)id(timer_hours).state, (int)id(timer_minutes).state, (int)id(timer_seconds).state);
+          if (id(timer_active).state) {
+            it.print(0, 1, "Status: RUNNING ");
+          } else if (id(timer_completed).state) {
+            it.print(0, 1, "Status: COMPLETED");
+          } else {
+            it.print(0, 1, "Status: PAUSED   ");
+          }
+        } else if (id(timer_display_mode).state == 2) {
+          // Stopwatch Mode:
+          it.printf(0, 0, "Stopwatch:%02d:%02d", (int)id(stopwatch_minutes).state, (int)id(stopwatch_seconds).state);
+          if (id(stopwatch_active).state) {
+            it.print(0, 1, "Status: RUNNING ");
+          } else {
+            it.print(0, 1, "Status: PAUSED   ");
+          }
+        } else if (id(timer_display_mode).state == 3) {
+          // Message Board Mode:
+          std::string msg = id(message_board).state;
+          uint16_t msg_len = msg.length();
+          if (msg_len <= 32) {
+            // If the message fits on a 16x2 display, split it over the two lines.
+            char line1[17];
+            char line2[17];
+            memset(line1, ' ', 16);
+            memset(line2, ' ', 16);
+            line1[16] = '\0';
+            line2[16] = '\0';
+            if (msg_len <= 16) {
+              memcpy(line1, msg.c_str(), msg_len);
+            } else {
+              memcpy(line1, msg.c_str(), 16);
+              uint8_t remaining = msg_len - 16;
+              if (remaining > 16) remaining = 16;
+              memcpy(line2, msg.c_str() + 16, remaining);
+            }
+            it.printf(0, 0, "%s", line1);
+            it.printf(0, 1, "%s", line2);
+          } else {
+            // For longer messages, scroll on line 0 only.
+            uint8_t offset = id(message_scroll_offset);
+            char buffer[17];
+            for (int i = 0; i < 16; i++) {
+              buffer[i] = msg[(offset + i) % msg_len];
+            }
+            buffer[16] = '\0';
+            it.printf(0, 0, "%s", buffer);
+            it.print(0, 1, "                ");
+          }
+        } else if (id(timer_display_mode).state == 4) {
+          // Alarm Mode:
+          it.printf(0, 0, "     ALARM!     ");
+          it.printf(0, 1, "  Wake Up Now!  ");
+        }
+      }
+      // Default Weather/Time Mode:
+      else {
+        switch (id(weather_index)) {
+          case 0:
+            it.printf(0, 1, "T:%.1f%cC H:%.1f%%", id(temperature).state, (char)223, id(humidity).state);
+            break;
+          case 1:
+            if (id(uv_index).state >= 11) {
+              it.printf(0, 1, "UV:%.1f (Extreme)", id(uv_index).state);
+            } else if (id(uv_index).state >= 8) {
+              it.printf(0, 1, "UV:%.1f(VeryHigh)", id(uv_index).state);
+            } else if (id(uv_index).state >= 6) {
+              it.printf(0, 1, "UV:%.1f (High)", id(uv_index).state);
+            } else if (id(uv_index).state >= 3) {
+              it.printf(0, 1, "UV:%.1f(Moderate)", id(uv_index).state);
+            } else {
+              it.printf(0, 1, "UV:%.1f (Low)", id(uv_index).state);
+            }
+            break;
+          case 2:
+            it.printf(0, 1, "Rain:%.1fmm", id(rain).state);
+            break;
+          case 3:
+            it.printf(0, 1, "Wxr:%s", id(weather_condition).state.c_str());
+            break;
+          case 4:
+            it.printf(0, 1, "T:%.1f%cC H:%.1f%%", id(temperature).state, (char)223, id(humidity).state);
+            break;
+          case 5:
+            it.strftime(0, 1, "%A", id(home_time).now());
+            break;
+          case 6:
+            it.strftime(0, 1, "%dth %b(%m) %y", id(home_time).now());
+            break;
+          case 7:
+            it.printf(0, 1, "FeelsLike:%.1f%cC", id(feels_like_temp).state, (char)223);
+            break;
+          case 8:
+            it.printf(0, 1, "Rain Prob:%.0f%%", id(thunderstorm_probability).state);
+            break;
+        }
+        if (id(home_time).now().is_valid()) {
+          it.strftime(0, 0, "Time:%I:%M:%S %p", id(home_time).now());
+        } else {
+          it.strftime(0, 0, "Time:%I:%M:%S %p", id(internet_time).now());
+        }
+      }
+
+text_sensor:
+  - platform: template
+    id: display_message
+    internal: true
+    update_interval: never
+
+  - platform: homeassistant
+    id: weather_condition
+    entity_id: sensor.openweathermap_condition
+    internal: true
+
+  - platform: homeassistant
+    id: message_board
+    entity_id: input_text.message_board_text
+    name: "Message Board"
+
+  - platform: homeassistant
+    id: alarm_time
+    entity_id: input_datetime.alarm_time
+    name: "Alarm Time"
+    internal: true
+
+globals:
+  - id: weather_index
+    type: int
+    restore_value: no
+    initial_value: '0'
+  - id: timer_start_time
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: timer_elapsed_time
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: stopwatch_start_time
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: stopwatch_elapsed_time
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: message_scroll_offset
+    type: uint8_t
+    restore_value: no
+    initial_value: '0'
+  - id: alarm_triggered
+    type: int
+    restore_value: no
+    initial_value: '0'
+  - id: physical_light_off
+    type: int
+    restore_value: no
+    initial_value: '0'
+  - id: alarm_enabled
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: last_alarm_minute
+    type: int
+    restore_value: no
+    initial_value: '-1'
+
+sensor:
+  - platform: dht
+    pin:
+      number: GPIO3
+      mode:
+        input: True
+    temperature:
+      name: "Temperature"
+      id: temperature
+    humidity:
+      name: "Humidity"
+      id: humidity
+    update_interval: 5s
+
+  - platform: homeassistant
+    id: uv_index
+    entity_id: sensor.home_uv_index_day_0
+    internal: true
+
+  - platform: homeassistant
+    id: rain
+    entity_id: sensor.openweathermap_rain
+    internal: true
+
+  - platform: homeassistant
+    id: feels_like_temp
+    entity_id: sensor.openweathermap_feels_like_temperature
+    internal: true
+
+  - platform: homeassistant
+    id: thunderstorm_probability
+    entity_id: sensor.home_thunderstorm_probability_day_0
+    internal: true
+
+  - platform: template
+    name: "Timer Hours"
+    id: timer_hours
+    accuracy_decimals: 0
+    unit_of_measurement: "h"
+    internal: true
+
+  - platform: template
+    name: "Timer Minutes"
+    id: timer_minutes
+    accuracy_decimals: 0
+    unit_of_measurement: "min"
+    internal: true
+
+  - platform: template
+    name: "Timer Seconds"
+    id: timer_seconds
+    accuracy_decimals: 0
+    unit_of_measurement: "sec"
+    internal: true
+
+  - platform: template
+    name: "Stopwatch Minutes"
+    id: stopwatch_minutes
+    accuracy_decimals: 0
+    unit_of_measurement: "min"
+    internal: true
+
+  - platform: template
+    name: "Stopwatch Seconds"
+    id: stopwatch_seconds
+    accuracy_decimals: 0
+    unit_of_measurement: "sec"
+    internal: true
+
+  - platform: template
+    name: "Timer Display Mode"
+    id: timer_display_mode
+    accuracy_decimals: 0
+    internal: true
+
+script:
+  - id: show_fan_on_message
+    mode: restart
+    then:
+      - text_sensor.template.publish:
+          id: display_message
+          state: "Fan is ON"
+      - delay: 2s
+      - text_sensor.template.publish:
+          id: display_message
+          state: ""
+  - id: show_fan_off_message
+    mode: restart
+    then:
+      - text_sensor.template.publish:
+          id: display_message
+          state: "Fan is OFF"
+      - delay: 2s
+      - text_sensor.template.publish:
+          id: display_message
+          state: ""
+  - id: show_light_on_message
+    mode: restart
+    then:
+      - text_sensor.template.publish:
+          id: display_message
+          state: "Light is ON"
+      - delay: 2s
+      - text_sensor.template.publish:
+          id: display_message
+          state: ""
+  - id: show_light_off_message
+    mode: restart
+    then:
+      - text_sensor.template.publish:
+          id: display_message
+          state: "Light is OFF"
+      - delay: 2s
+      - text_sensor.template.publish:
+          id: display_message
+          state: ""
+      - lambda: |-
+          // When the light is turned off physically, exit alarm mode and ensure LCD backlight is on.
+          if (id(timer_display_mode).state == 4) {
+            id(alarm_triggered) = 0;
+            id(timer_display_mode).publish_state(0);
+            id(my_lcd).backlight();
+          }
+  - id: start_timer_script
+    mode: restart
+    then:
+      - binary_sensor.template.publish:
+          id: timer_active
+          state: true
+      - binary_sensor.template.publish:
+          id: timer_completed
+          state: false
+      - sensor.template.publish:
+          id: timer_display_mode
+          state: 1
+      - lambda: |-
+          if (id(timer_start_time) == 0) {
+            uint32_t duration_ms = id(timer_duration).state * 60 * 1000;
+            id(timer_start_time) = millis();
+            id(timer_elapsed_time) = 0;
+            uint32_t remaining_time = duration_ms / 1000;
+            uint32_t hours = remaining_time / 3600;
+            remaining_time %= 3600;
+            uint32_t minutes = remaining_time / 60;
+            uint32_t seconds = remaining_time % 60;
+            id(timer_hours).publish_state(hours);
+            id(timer_minutes).publish_state(minutes);
+            id(timer_seconds).publish_state(seconds);
+          } else {
+            id(timer_start_time) = millis() - id(timer_elapsed_time);
+          }
+  - id: pause_timer_script
+    mode: restart
+    then:
+      - binary_sensor.template.publish:
+          id: timer_active
+          state: false
+      - lambda: |-
+          if (id(timer_start_time) > 0) {
+            id(timer_elapsed_time) = millis() - id(timer_start_time);
+          }
+  - id: reset_timer_script
+    mode: restart
+    then:
+      - binary_sensor.template.publish:
+          id: timer_active
+          state: false
+      - binary_sensor.template.publish:
+          id: timer_completed
+          state: false
+      - lambda: |-
+          id(timer_start_time) = 0;
+          id(timer_elapsed_time) = 0;
+          uint32_t duration_s = id(timer_duration).state * 60;
+          uint32_t hours = duration_s / 3600;
+          duration_s %= 3600;
+          uint32_t minutes = duration_s / 60;
+          uint32_t seconds = duration_s % 60;
+          id(timer_hours).publish_state(hours);
+          id(timer_minutes).publish_state(minutes);
+          id(timer_seconds).publish_state(seconds);
+      - delay: 3s
+      - sensor.template.publish:
+          id: timer_display_mode
+          state: 0
+  - id: start_stopwatch_script
+    mode: restart
+    then:
+      - binary_sensor.template.publish:
+          id: stopwatch_active
+          state: true
+      - sensor.template.publish:
+          id: timer_display_mode
+          state: 2
+      - lambda: |-
+          if (id(stopwatch_start_time) == 0) {
+            id(stopwatch_start_time) = millis();
+            id(stopwatch_elapsed_time) = 0;
+          } else {
+            id(stopwatch_start_time) = millis() - id(stopwatch_elapsed_time);
+          }
+  - id: pause_stopwatch_script
+    mode: restart
+    then:
+      - binary_sensor.template.publish:
+          id: stopwatch_active
+          state: false
+      - lambda: |-
+          if (id(stopwatch_start_time) > 0) {
+            id(stopwatch_elapsed_time) = millis() - id(stopwatch_start_time);
+          }
+  - id: reset_stopwatch_script
+    mode: restart
+    then:
+      - binary_sensor.template.publish:
+          id: stopwatch_active
+          state: false
+      - lambda: |-
+          id(stopwatch_start_time) = 0;
+          id(stopwatch_elapsed_time) = 0;
+          id(stopwatch_minutes).publish_state(0);
+          id(stopwatch_seconds).publish_state(0);
+      - delay: 3s
+      - sensor.template.publish:
+          id: timer_display_mode
+          state: 0
+
+interval:
+  - interval: 3s
+    then:
+      - lambda: |-
+          if (id(timer_display_mode).state == 0) {
+            id(weather_index) = (id(weather_index) + 1) % 9;
+          }
+  - interval: 1s
+    then:
+      - lambda: |-
+          // Timer expiration logic.
+          if (id(timer_active).state) {
+            uint32_t duration_ms = id(timer_duration).state * 60 * 1000;
+            uint32_t elapsed_ms = millis() - id(timer_start_time);
+            if (elapsed_ms >= duration_ms) {
+              id(timer_active).publish_state(false);
+              id(timer_completed).publish_state(true);
+              id(timer_hours).publish_state(0);
+              id(timer_minutes).publish_state(0);
+              id(timer_seconds).publish_state(0);
+              if (id(timer_display_mode).state != 4) {
+                id(timer_display_mode).publish_state(0);
+              }
+            } else {
+              uint32_t remaining_ms = duration_ms - elapsed_ms;
+              uint32_t remaining_s = remaining_ms / 1000;
+              uint32_t hours = remaining_s / 3600;
+              remaining_s %= 3600;
+              uint32_t minutes = remaining_s / 60;
+              uint32_t seconds = remaining_s % 60;
+              id(timer_hours).publish_state(hours);
+              id(timer_minutes).publish_state(minutes);
+              id(timer_seconds).publish_state(seconds);
+            }
+          }
+          if (id(stopwatch_active).state) {
+            uint32_t elapsed_ms = millis() - id(stopwatch_start_time);
+            uint32_t elapsed_s = elapsed_ms / 1000;
+            uint32_t minutes = elapsed_s / 60;
+            uint32_t seconds = elapsed_s % 60;
+            id(stopwatch_minutes).publish_state(minutes);
+            id(stopwatch_seconds).publish_state(seconds);
+          }
+  - interval: 0.25s
+    then:
+      - lambda: |-
+          // Update scrolling only if message exceeds 32 characters.
+          if (id(timer_display_mode).state == 3) {
+            uint16_t msg_len = strlen(id(message_board).state.c_str());
+            if (msg_len > 32) {
+              uint8_t offset = id(message_scroll_offset);
+              offset = (offset + 1) % msg_len;
+              id(message_scroll_offset) = offset;
+            }
+          }
+  - interval: 1s
+    then:
+      - lambda: |-
+          // Alarm checking: trigger only if alarm is enabled.
+          if (id(alarm_enabled) && id(home_time).now().is_valid() && strlen(id(alarm_time).state.c_str()) > 0) {
+            if (id(timer_display_mode).state == 4) {
+              return;
+            }
+            std::string alarm_str = id(alarm_time).state;
+            if (alarm_str.length() == 8) {
+              alarm_str = alarm_str.substr(0, 5);
+            } else if (alarm_str.length() >= 16) {
+              alarm_str = alarm_str.substr(11, 5);
+            }
+            char current_time[6];
+            id(home_time).now().strftime(current_time, sizeof(current_time), "%H:%M");
+            int current_minute = atoi(current_time + 3);
+            ESP_LOGD("alarm", "Current: %s, Alarm: %s, AlarmTriggered: %d, LastAlarmMinute: %d", current_time, alarm_str.c_str(), id(alarm_triggered), id(last_alarm_minute));
+            if (strcmp(current_time, alarm_str.c_str()) == 0) {
+              if (id(alarm_triggered) == 0 && id(last_alarm_minute) != current_minute) {
+                id(alarm_triggered) = 1;
+                id(last_alarm_minute) = current_minute;
+                id(timer_display_mode).publish_state(4);
+                id(lightSwitch).turn_on();
+              }
+            } else {
+              id(alarm_triggered) = 0;
+            }
+          }
+  - interval: 0.5s
+    then:
+      - lambda: |-
+          // Blink the LCD backlight in Alarm Mode.
+          if (id(timer_display_mode).state == 4) {
+            static bool blink = false;
+            blink = !blink;
+            if (blink) {
+              id(my_lcd).backlight();
+            } else {
+              id(my_lcd).no_backlight();
+            }
+          }
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
