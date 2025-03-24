@@ -10,7 +10,7 @@ esphome:
   name_add_mac_suffix: false
   friendly_name: ${friendly_name}
   on_boot:
-    priority: -10
+    priority: -100.0
     then:
       - switch.turn_on: lcd_backlight
       - switch.turn_on: alarm_switch
@@ -387,43 +387,43 @@ globals:
   - id: weather_index
     type: int
     restore_value: no
-    initial_value: '0'
+    initial_value: "0"
   - id: timer_start_time
     type: uint32_t
     restore_value: no
-    initial_value: '0'
+    initial_value: "0"
   - id: timer_elapsed_time
     type: uint32_t
     restore_value: no
-    initial_value: '0'
+    initial_value: "0"
   - id: stopwatch_start_time
     type: uint32_t
     restore_value: no
-    initial_value: '0'
+    initial_value: "0"
   - id: stopwatch_elapsed_time
     type: uint32_t
     restore_value: no
-    initial_value: '0'
+    initial_value: "0"
   - id: message_scroll_offset
     type: uint8_t
     restore_value: no
-    initial_value: '0'
+    initial_value: "0"
   - id: alarm_triggered
     type: int
     restore_value: no
-    initial_value: '0'
+    initial_value: "0"
   - id: physical_light_off
     type: int
     restore_value: no
-    initial_value: '0'
+    initial_value: "0"
   - id: alarm_enabled
     type: bool
     restore_value: no
-    initial_value: 'false'
+    initial_value: "false"
   - id: last_alarm_minute
     type: int
     restore_value: no
-    initial_value: '-1'
+    initial_value: "-1"
 
 sensor:
   - platform: dht
@@ -753,3 +753,6 @@ interval:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  ap:
+    ssid: "Study Room's Fallback Hotspot"
+    password: "Amanagam123"

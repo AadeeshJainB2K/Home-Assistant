@@ -1,0 +1,126 @@
+substitutions:
+  name: esp-web-tools-example-716a9a
+  friendly_name: "Smart Irrigation System "
+
+packages:
+  esphome.esp_web_tools_example: github://esphome/example-configs/esp-web-tools/esp8266.yaml@main
+
+esphome:
+  name: ${name}
+  name_add_mac_suffix: false
+  friendly_name: ${friendly_name}
+
+api:
+  encryption:
+    key: fXHZXWUuITkIXhgB/ICPWqnXJHvyfM5kFekPgum/8w8=
+
+binary_sensor:
+  - platform: gpio
+    id: dripValveInput
+    pin:
+      number: GPIO012
+      inverted: True
+      mode:
+        input: true
+        pullup: true
+    on_press:
+      then:
+        - switch.turn_on: dripValveSwitch
+    on_release:
+      then:
+        - switch.turn_off: dripValveSwitch
+
+  - platform: gpio
+    id: waterPumpInput
+    pin:
+      number: GPIO14
+      inverted: True
+      mode:
+        input: true
+        pullup: true
+    on_press:
+      then:
+        - switch.turn_on: waterPumpSwitch
+    on_release:
+      then:
+        - switch.turn_off: waterPumpSwitch
+
+switch:
+  - platform: gpio
+    name: "Drip Valve"
+    pin: GPIO4
+    id: dripValveSwitch
+    inverted: True
+
+  - platform: gpio
+    name: "Water Pump"
+    pin: GPIO5
+    id: waterPumpSwitch
+    inverted: True
+
+globals:
+  - id: current_session_water
+    type: float
+    restore_value: no
+    initial_value: "0.0"
+  - id: previous_flow_state
+    type: bool
+    restore_value: no
+    initial_value: "false"
+
+sensor:
+  - platform: pulse_counter
+    id: waterFlowRate
+    name: "Water Flow Rate"
+    pin: GPIO3
+    update_interval: 1s
+    unit_of_measurement: "L/min"
+    count_mode:
+      rising_edge: "INCREMENT"
+      falling_edge: "DISABLE"
+    filters:
+      - multiply: 0.00225
+
+  - platform: template
+    id: instantaneous_flow_m3s
+    name: "Instantaneous Flow (m³/s)"
+    unit_of_measurement: "m³/s"
+    lambda: |-
+      return id(waterFlowRate).state / 60000.0;
+    update_interval: 1s
+
+  - platform: template
+    id: session_water_volume
+    name: "Water Used in Last Session"
+    unit_of_measurement: "L"
+    lambda: |-
+      return id(current_session_water);
+    update_interval: 1s
+
+interval:
+  - interval: 1s
+    then:
+      - lambda: |-
+          float flow = id(waterFlowRate).state;
+          // Consider flow "active" if it is above a minimal threshold (0.01 L/min)
+          bool isFlowing = flow > 0.01;
+
+          // If water starts flowing after being idle, reset the session water counter.
+          if (isFlowing && !id(previous_flow_state)) {
+            id(current_session_water) = 0.0;
+          }
+
+          // While water is flowing, accumulate the water volume (flow in L/min to L/sec conversion).
+          if (isFlowing) {
+            id(current_session_water) += flow / 60.0;
+          }
+
+          // Update the previous flow state for the next interval.
+          id(previous_flow_state) = isFlowing;
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "Smart-Irrigation-System"
+    password: "Amanagam123*"
