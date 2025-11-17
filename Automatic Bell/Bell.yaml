@@ -1,15 +1,248 @@
 substitutions:
-  name: esp-web-tools-example-c8ba1d
-  friendly_name: Bell
+  name: atallab
+  friendly_name: Atal Lab
+
 packages:
   esphome.esp_web_tools_example: github://esphome/example-configs/esp-web-tools/esp8266.yaml@main
+
 esphome:
   name: ${name}
   name_add_mac_suffix: false
   friendly_name: ${friendly_name}
+  on_boot:
+    priority: -100
+    then:
+      - switch.turn_on: autoBell
+
 api:
   encryption:
-    key: tncz0W8DeiYNfl8QvxUOubtGc9TE56xeUA+/xCCtj4I=
+    key: z5zGYejdgHgf5rBJO90H2qpQoah4YSU8znS27lrsxUA=
+  reboot_timeout: 0s
+
+switch:
+  - platform: template
+    name: "Auto Bell"
+    id: autoBell
+    icon: "mdi:bell-ring-outline"
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+  - platform: output
+    name: "Bell"
+    id: atalLabBell
+    output: BellOutput
+    restore_mode: ALWAYS_OFF
+
+output:
+  - platform: gpio
+    id: BellOutput
+    pin: GPIO5
+    inverted: true
+
+  - platform: gpio
+    id: lightOutput
+    pin: GPIO4
+    inverted: true
+
+light:
+  - platform: binary
+    name: Light
+    id: atalLabLight
+    output: lightOutput
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO12
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    id: lightSwitch
+    on_press:
+      - light.turn_on: atalLabLight
+    on_release:
+      - light.turn_off: atalLabLight
+
+  - platform: gpio
+    pin:
+      number: GPIO3
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    id: BellSwitch
+    on_press:
+      - switch.turn_on: atalLabBell
+    on_release:
+      - switch.turn_off: atalLabBell
+
+  - platform: gpio
+    pin: GPIO14
+    name: "Motion Sensor"
+    device_class: motion
+
+sensor:
+  - platform: dht
+    pin: GPIO13
+    temperature:
+      name: "Atal Tinkering Lab Temperature"
+    humidity:
+      name: "Atal Tinkering Lab Humidity"
+    update_interval: 2s
+
+time:
+  - platform: sntp
+    id: sntp_time
+    timezone: Asia/Kolkata
+
+    # ── Long bells ──
+    on_time:
+      - seconds: 0
+        minutes: 55
+        hours: 7
+        days_of_week: [1, 2, 3, 4, 5, 6]
+        then:
+          - if:
+              condition:
+                switch.is_on: autoBell
+              then:
+                - script.execute: ring_long_bell
+
+      - seconds: 0
+        minutes: 55
+        hours: 10
+        days_of_week: [1, 2, 3, 4, 5, 6]
+        then:
+          - if:
+              condition:
+                switch.is_on: autoBell
+              then:
+                - script.execute: ring_long_bell
+
+      - seconds: 0
+        minutes: 10
+        hours: 14
+        days_of_week: [1, 2, 3, 4, 5, 6]
+        then:
+          - if:
+              condition:
+                switch.is_on: autoBell
+              then:
+                - script.execute: ring_long_bell
+
+      # ── Short bells ──
+      - seconds: 0
+        minutes: 15
+        hours: 8
+        days_of_week: [1, 2, 3, 4, 5, 6]
+        then:
+          - if:
+              condition:
+                switch.is_on: autoBell
+              then:
+                - script.execute: ring_short_bell
+
+      - seconds: 0
+        minutes: 55
+        hours: 8
+        days_of_week: [1, 2, 3, 4, 5, 6]
+        then:
+          - if:
+              condition:
+                switch.is_on: autoBell
+              then:
+                - script.execute: ring_short_bell
+
+      - seconds: 0
+        minutes: 35
+        hours: 9
+        days_of_week: [1, 2, 3, 4, 5, 6]
+        then:
+          - if:
+              condition:
+                switch.is_on: autoBell
+              then:
+                - script.execute: ring_short_bell
+
+      - seconds: 0
+        minutes: 15
+        hours: 10
+        days_of_week: [1, 2, 3, 4, 5, 6]
+        then:
+          - if:
+              condition:
+                switch.is_on: autoBell
+              then:
+                - script.execute: ring_short_bell
+
+      - seconds: 0
+        minutes: 25
+        hours: 11
+        days_of_week: [1, 2, 3, 4, 5, 6]
+        then:
+          - if:
+              condition:
+                switch.is_on: autoBell
+              then:
+                - script.execute: ring_short_bell
+
+      - seconds: 0
+        minutes: 30
+        hours: 11
+        days_of_week: [1, 2, 3, 4, 5, 6]
+        then:
+          - if:
+              condition:
+                switch.is_on: autoBell
+              then:
+                - script.execute: ring_short_bell
+
+      - seconds: 0
+        minutes: 10
+        hours: 12
+        days_of_week: [1, 2, 3, 4, 5, 6]
+        then:
+          - if:
+              condition:
+                switch.is_on: autoBell
+              then:
+                - script.execute: ring_short_bell
+
+      - seconds: 0
+        minutes: 50
+        hours: 12
+        days_of_week: [1, 2, 3, 4, 5, 6]
+        then:
+          - if:
+              condition:
+                switch.is_on: autoBell
+              then:
+                - script.execute: ring_short_bell
+
+      - seconds: 0
+        minutes: 30
+        hours: 13
+        days_of_week: [1, 2, 3, 4, 5, 6]
+        then:
+          - if:
+              condition:
+                switch.is_on: autoBell
+              then:
+                - script.execute: ring_short_bell
+
+script:
+  - id: ring_long_bell
+    then:
+      - switch.turn_on: atalLabBell
+      - delay: 5s
+      - switch.turn_off: atalLabBell
+
+  - id: ring_short_bell
+    then:
+      - switch.turn_on: atalLabBell
+      - delay: 3s
+      - switch.turn_off: atalLabBell
 
 wifi:
   ssid: !secret wifi_ssid
