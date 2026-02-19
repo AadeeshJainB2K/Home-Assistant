@@ -1,0 +1,606 @@
+substitutions:
+  name: bedroom-controller
+  friendly_name: Bedroom Controller
+
+packages:
+  esphome.esp_web_tools_example: github://esphome/example-configs/esp-web-tools/esp8266.yaml@main
+
+esphome:
+  name: ${name}
+  name_add_mac_suffix: false
+  friendly_name: ${friendly_name}
+  on_boot:
+    priority: -100.0
+    then:
+      # On boot: backlight ON, alarm switch OFF so HA state is always in sync.
+      - switch.turn_on: lcd_backlight
+      - switch.turn_off: alarm_switch
+
+esp8266:
+  board: d1_mini
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  min_auth_mode: WPA2
+  ap:
+    ssid: "Bedroom-Fallback"
+    password: "Amanagam123"
+
+api:
+  encryption:
+    key: PGV+nXpxePB1M93mTySKikuH2+Ch4rinK24WrtK2PeY=
+  reboot_timeout: 0s
+
+logger:
+  level: WARN  # Reduce verbosity to save RAM/CPU on ESP8266
+
+# ── I2C Bus ──────────────────────────────────────────────────────────────────
+i2c:
+  sda: D2
+  scl: D1
+
+# ── Time Sources ─────────────────────────────────────────────────────────────
+time:
+  - platform: homeassistant
+    id: home_time
+  - platform: sntp
+    id: internet_time
+    timezone: "IST-5:30"
+
+# ── Globals ───────────────────────────────────────────────────────────────────
+globals:
+  - id: weather_index
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+  - id: message_scroll_offset
+    type: uint8_t
+    restore_value: no
+    initial_value: '0'
+
+  - id: alarm_triggered
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+  - id: alarm_enabled
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+  - id: last_alarm_minute
+    type: int
+    restore_value: no
+    initial_value: '-1'
+
+# ── Binary Sensors ────────────────────────────────────────────────────────────
+binary_sensor:
+
+  # ── Motion Sensor ──
+  # DAY  (06:00–20:00): motion ON → backlight on, cancel 5-min countdown.
+  #                     motion OFF → start 5-min countdown.
+  # NIGHT (20:00–06:00): motion ON → backlight on for 1 min then auto-off.
+  #                      motion OFF → nothing (1-min timer already running).
+  - platform: gpio
+    pin: D0
+    name: "Bedroom Motion"
+    device_class: motion
+    on_press:
+      - if:
+          condition:
+            lambda: |-
+              auto now = id(home_time).now();
+              if (!now.is_valid()) now = id(internet_time).now();
+              return (now.hour >= 20 || now.hour < 6);
+          then:
+            # Night: turn on and start 1-minute auto-off immediately
+            - switch.turn_on: lcd_backlight
+            - script.execute: backlight_night_timeout
+          else:
+            # Day: turn on and cancel any pending 5-min timeout
+            - switch.turn_on: lcd_backlight
+            - script.stop: backlight_timeout
+    on_release:
+      - if:
+          condition:
+            lambda: |-
+              auto now = id(home_time).now();
+              if (!now.is_valid()) now = id(internet_time).now();
+              return !(now.hour >= 20 || now.hour < 6);
+          then:
+            # Day only: begin 5-min countdown when motion clears
+            - script.execute: backlight_timeout
+
+  # ── Touch 1: Bedroom Fan ──
+  - platform: gpio
+    pin: RX
+    name: "Bedroom Touch 1"
+    on_press:
+      - homeassistant.service:
+          service: fan.toggle
+          data:
+            entity_id: fan.esp_web_tools_example_5f1378_fan
+
+  # ── Touch 2: Bedroom Light ──
+  - platform: gpio
+    pin: D6
+    name: "Bedroom Touch 2"
+    on_press:
+      - homeassistant.service:
+          service: light.toggle
+          data:
+            entity_id: light.esp_web_tools_example_5f1378_light
+
+  # ── Touch 3: Night Lamp ──
+  - platform: gpio
+    pin: D7
+    name: "Bedroom Touch 3"
+    on_press:
+      - homeassistant.service:
+          service: light.toggle
+          data:
+            entity_id: light.esp_web_tools_example_5f1378_night_lamp
+
+  # ── Touch 4: Socket / Smart Alarm Dismiss ──
+  # Alarm ringing → dismiss and sync HA switch to OFF.
+  # No alarm     → toggle socket.
+  - platform: gpio
+    pin: D5
+    name: "Bedroom Touch 4"
+    on_press:
+      - if:
+          condition:
+            lambda: 'return id(timer_display_mode).state == 4;'
+          then:
+            - lambda: |-
+                id(alarm_triggered) = 0;
+                id(alarm_enabled) = false;
+                id(timer_display_mode).publish_state(0);
+                id(room_lcd).backlight();
+            - switch.turn_off: alarm_switch   # Sync HA switch to OFF
+          else:
+            - homeassistant.service:
+                service: switch.toggle
+                data:
+                  entity_id: switch.esp_web_tools_example_5f1378_socket
+
+  # ── Virtual: Alarm Mode Active (usable in HA automations) ──
+  - platform: template
+    name: "Alarm Mode Active"
+    id: alarm_mode_active
+    lambda: 'return id(timer_display_mode).state == 4;'
+
+# ── Switches ──────────────────────────────────────────────────────────────────
+switch:
+
+  # ── LCD Backlight ──
+  - platform: template
+    name: "LCD Backlight"
+    id: lcd_backlight
+    optimistic: true
+    turn_on_action:
+      - lambda: 'id(room_lcd).backlight();'
+    turn_off_action:
+      - lambda: 'id(room_lcd).no_backlight();'
+
+  # ── Message Board Mode ──
+  - platform: template
+    name: "Message Board Mode"
+    id: message_board_mode
+    optimistic: true
+    turn_on_action:
+      - sensor.template.publish:
+          id: timer_display_mode
+          state: 3
+      - lambda: 'id(message_scroll_offset) = 0;'
+    turn_off_action:
+      - sensor.template.publish:
+          id: timer_display_mode
+          state: 0
+
+  # ── Alarm Switch ──
+  # BUG FIX: alarm_enabled global drives internal logic.
+  # Turning the switch OFF also dismisses a currently-ringing alarm.
+  - platform: template
+    name: "Alarm"
+    id: alarm_switch
+    optimistic: true
+    turn_on_action:
+      - lambda: 'id(alarm_enabled) = true;'
+      - text_sensor.template.publish:
+          id: display_message
+          state: "Alarm Enabled"
+      - delay: 2s
+      - text_sensor.template.publish:
+          id: display_message
+          state: ""
+    turn_off_action:
+      - lambda: |-
+          id(alarm_enabled) = false;
+          // Also dismiss if alarm is currently ringing
+          if (id(timer_display_mode).state == 4) {
+            id(alarm_triggered) = 0;
+            id(timer_display_mode).publish_state(0);
+            id(room_lcd).backlight();
+          }
+      - text_sensor.template.publish:
+          id: display_message
+          state: "Alarm Disabled"
+      - delay: 2s
+      - text_sensor.template.publish:
+          id: display_message
+          state: ""
+
+# ── Sensors ───────────────────────────────────────────────────────────────────
+sensor:
+
+  # ── Local DHT11 ──
+  - platform: dht
+    pin: D3
+    model: DHT11
+    update_interval: 10s
+    temperature:
+      name: "Bedroom Temperature"
+      id: temperature
+    humidity:
+      name: "Bedroom Humidity"
+      id: humidity
+
+  # ── OpenWeatherMap sensors (still working fine via HA) ──
+  - platform: homeassistant
+    id: rain
+    entity_id: sensor.openweathermap_rain
+    internal: true
+
+  - platform: homeassistant
+    id: feels_like_temp
+    entity_id: sensor.openweathermap_feels_like_temperature
+    internal: true
+
+  # ── WeatherAPI.com sensors ──
+  # Replace broken sensor.home_uv_index_day_0 and sensor.home_thunderstorm_probability_day_0.
+  # See HA configuration.yaml additions at the bottom of this file.
+  - platform: homeassistant
+    id: uv_index
+    entity_id: sensor.weatherapi_uv_index
+    internal: true
+
+  - platform: homeassistant
+    id: rain_chance
+    entity_id: sensor.weatherapi_chance_of_rain
+    internal: true
+
+  - platform: homeassistant
+    id: max_temp
+    entity_id: sensor.weatherapi_max_temp
+    internal: true
+
+  - platform: homeassistant
+    id: min_temp
+    entity_id: sensor.weatherapi_min_temp
+    internal: true
+
+  - platform: homeassistant
+    id: total_precip
+    entity_id: sensor.weatherapi_total_precip
+    internal: true
+
+  # ── Internal display mode sensor ──
+  # 0 = default weather/time, 3 = message board, 4 = alarm
+  - platform: template
+    name: "Timer Display Mode"
+    id: timer_display_mode
+    internal: true
+    accuracy_decimals: 0
+
+# ── Text Sensors ──────────────────────────────────────────────────────────────
+text_sensor:
+
+  - platform: template
+    id: display_message
+    internal: true
+    update_interval: never
+
+  # Weather condition from OpenWeatherMap (still working)
+  - platform: homeassistant
+    id: weather_condition
+    entity_id: sensor.openweathermap_condition
+    internal: true
+
+  - platform: homeassistant
+    id: message_board
+    entity_id: input_text.message_board_text
+    name: "Message Board"
+
+  - platform: homeassistant
+    id: alarm_time
+    entity_id: input_datetime.alarm_time
+    name: "Alarm Time"
+    internal: true
+
+# ── Scripts ───────────────────────────────────────────────────────────────────
+script:
+
+  # Day auto-off: 5 minutes of no motion → backlight off (alarm-exempt).
+  - id: backlight_timeout
+    mode: restart
+    then:
+      - delay: 5min
+      - if:
+          condition:
+            lambda: 'return id(timer_display_mode).state != 4;'
+          then:
+            - switch.turn_off: lcd_backlight
+
+  # Night auto-off: backlight turns off after 1 minute (alarm-exempt).
+  - id: backlight_night_timeout
+    mode: restart
+    then:
+      - delay: 1min
+      - if:
+          condition:
+            lambda: 'return id(timer_display_mode).state != 4;'
+          then:
+            - switch.turn_off: lcd_backlight
+
+# ── Display ───────────────────────────────────────────────────────────────────
+display:
+  - platform: lcd_pcf8574
+    id: room_lcd
+    dimensions: 16x2
+    address: 0x27
+    lambda: |-
+      // ── Priority 1: Override message ──
+      if (id(display_message).state != "") {
+        if (id(home_time).now().is_valid()) {
+          it.strftime(0, 0, "Time:%I:%M:%S %p", id(home_time).now());
+        } else {
+          it.strftime(0, 0, "Time:%I:%M:%S %p", id(internet_time).now());
+        }
+        it.printf(0, 1, "%-16s", id(display_message).state.c_str());
+        return;
+      }
+
+      // ── Priority 2: Special modes ──
+      int mode = (int)id(timer_display_mode).state;
+
+      if (mode == 3) {
+        // Message Board: split short messages, scroll long ones
+        std::string msg = id(message_board).state;
+        uint16_t msg_len = msg.length();
+        if (msg_len == 0) {
+          it.print(0, 0, "No message set  ");
+          it.print(0, 1, "                ");
+        } else if (msg_len <= 32) {
+          char line1[17] = "                ";
+          char line2[17] = "                ";
+          uint8_t l1 = (msg_len <= 16) ? msg_len : 16;
+          memcpy(line1, msg.c_str(), l1);
+          if (msg_len > 16) {
+            uint8_t l2 = msg_len - 16;
+            if (l2 > 16) l2 = 16;
+            memcpy(line2, msg.c_str() + 16, l2);
+          }
+          it.printf(0, 0, "%s", line1);
+          it.printf(0, 1, "%s", line2);
+        } else {
+          uint8_t offset = id(message_scroll_offset);
+          char buf[17];
+          for (int i = 0; i < 16; i++)
+            buf[i] = msg[(offset + i) % msg_len];
+          buf[16] = '\0';
+          it.printf(0, 0, "%s", buf);
+          it.print(0, 1, "                ");
+        }
+        return;
+      }
+
+      if (mode == 4) {
+        // Alarm — backlight blink handled in interval
+        it.print(0, 0, "     ALARM!     ");
+        it.print(0, 1, "  Wake Up Now!  ");
+        return;
+      }
+
+      // ── Priority 3: Default Weather + Time rotation (11 slots, 0-10) ──
+      if (id(home_time).now().is_valid()) {
+        it.strftime(0, 0, "Time:%I:%M:%S %p", id(home_time).now());
+      } else {
+        it.strftime(0, 0, "Time:%I:%M:%S %p", id(internet_time).now());
+      }
+
+      switch (id(weather_index)) {
+        case 0:
+          // Local temp + humidity
+          it.printf(0, 1, "T:%.1f%cC H:%.0f%%",
+                    id(temperature).state, (char)223, id(humidity).state);
+          break;
+        case 1:
+          // UV index (WeatherAPI)
+          {
+            float uv = id(uv_index).state;
+            if (uv >= 11)      it.printf(0, 1, "UV:%.0f Extreme ", uv);
+            else if (uv >= 8)  it.printf(0, 1, "UV:%.0f VeryHigh", uv);
+            else if (uv >= 6)  it.printf(0, 1, "UV:%.0f High    ", uv);
+            else if (uv >= 3)  it.printf(0, 1, "UV:%.0f Moderate", uv);
+            else               it.printf(0, 1, "UV:%.0f Low     ", uv);
+          }
+          break;
+        case 2:
+          // Rain (mm) — OpenWeatherMap
+          it.printf(0, 1, "Rain: %.1fmm     ", id(rain).state);
+          break;
+        case 3:
+          // Weather condition — OpenWeatherMap
+          it.printf(0, 1, "%-16s", id(weather_condition).state.c_str());
+          break;
+        case 4:
+          // Feels-like temperature — OpenWeatherMap
+          it.printf(0, 1, "FeelsLk:%.1f%cC  ", id(feels_like_temp).state, (char)223);
+          break;
+        case 5:
+          // Day of week
+          if (id(home_time).now().is_valid())
+            it.strftime(0, 1, "%-16A", id(home_time).now());
+          break;
+        case 6:
+          // Full date
+          if (id(home_time).now().is_valid())
+            it.strftime(0, 1, "%d %b %Y       ", id(home_time).now());
+          break;
+        case 7:
+          // Chance of rain today (WeatherAPI)
+          it.printf(0, 1, "Rain Prob:%.0f%%  ", id(rain_chance).state);
+          break;
+        case 8:
+          // Today's max / min temperature (WeatherAPI)
+          it.printf(0, 1, "Hi:%.0f Lo:%.0f%cC  ",
+                    id(max_temp).state, id(min_temp).state, (char)223);
+          break;
+        case 9:
+          // Total precipitation today (WeatherAPI)
+          it.printf(0, 1, "TtlRain:%.1fmm  ", id(total_precip).state);
+          break;
+        case 10:
+          // Repeat temp+humidity as filler to end the cycle cleanly
+          it.printf(0, 1, "T:%.1f%cC H:%.0f%%",
+                    id(temperature).state, (char)223, id(humidity).state);
+          break;
+      }
+
+# ── Intervals ─────────────────────────────────────────────────────────────────
+interval:
+
+  # Weather display rotation — 11 slots (0–10), advances every 3 s
+  - interval: 3s
+    then:
+      - lambda: |-
+          if (id(timer_display_mode).state == 0) {
+            id(weather_index) = (id(weather_index) + 1) % 11;
+          }
+
+  # Message board scroll — advances every 250 ms
+  - interval: 250ms
+    then:
+      - lambda: |-
+          if (id(timer_display_mode).state == 3) {
+            uint16_t msg_len = id(message_board).state.length();
+            if (msg_len > 32) {
+              id(message_scroll_offset) =
+                (id(message_scroll_offset) + 1) % msg_len;
+            }
+          }
+
+  # 8 PM backlight cutoff + alarm check — every 1 s
+  - interval: 1s
+    then:
+      - lambda: |-
+          // ── 8 PM cutoff: turn off backlight after 20:00 (alarm exempt) ──
+          {
+            auto now = id(home_time).now().is_valid()
+                        ? id(home_time).now()
+                        : id(internet_time).now();
+            if (now.is_valid()
+                && now.hour >= 20
+                && id(lcd_backlight).state
+                && id(timer_display_mode).state != 4) {
+              id(lcd_backlight).turn_off();
+            }
+          }
+
+          // ── Alarm ring check ──
+          if (!id(alarm_enabled)
+              || !id(home_time).now().is_valid()
+              || strlen(id(alarm_time).state.c_str()) == 0) return;
+
+          if (id(timer_display_mode).state == 4) return;  // already ringing
+
+          // Parse alarm time string ("HH:MM:SS" or full datetime)
+          std::string alarm_str = id(alarm_time).state;
+          if (alarm_str.length() == 8) {
+            alarm_str = alarm_str.substr(0, 5);        // "HH:MM:SS" → "HH:MM"
+          } else if (alarm_str.length() >= 16) {
+            alarm_str = alarm_str.substr(11, 5);       // datetime  → "HH:MM"
+          }
+
+          char cur[6];
+          id(home_time).now().strftime(cur, sizeof(cur), "%H:%M");
+          int cur_min = atoi(cur + 3);
+
+          if (strcmp(cur, alarm_str.c_str()) == 0) {
+            if (id(alarm_triggered) == 0 && id(last_alarm_minute) != cur_min) {
+              id(alarm_triggered) = 1;
+              id(last_alarm_minute) = cur_min;
+              id(timer_display_mode).publish_state(4);
+              id(room_lcd).backlight();   // Ensure visible even after 8 PM
+            }
+          } else {
+            id(alarm_triggered) = 0;
+          }
+
+  # Alarm backlight blink — every 500 ms
+  - interval: 500ms
+    then:
+      - lambda: |-
+          if (id(timer_display_mode).state == 4) {
+            static bool blink_state = false;
+            blink_state = !blink_state;
+            if (blink_state) id(room_lcd).backlight();
+            else             id(room_lcd).no_backlight();
+          }
+
+# =============================================================================
+# HOME ASSISTANT — configuration.yaml ADDITIONS REQUIRED
+# =============================================================================
+# Add the following REST sensors so WeatherAPI data is available as HA entities.
+# Replace the location string if needed (auto:ip uses your server's public IP;
+# or use "New Delhi" / "22.72,75.86" etc. for a fixed location).
+#
+# sensor:
+#   - platform: rest
+#     name: "WeatherAPI UV Index"
+#     unique_id: weatherapi_uv_index
+#     resource: "https://api.weatherapi.com/v1/current.json?key=7443af7277bc4bdb9fb133250261902&q=auto:ip&aqi=no"
+#     value_template: "{{ value_json.current.uv }}"
+#     unit_of_measurement: "UV"
+#     scan_interval: 1800        # every 30 min
+#
+#   - platform: rest
+#     name: "WeatherAPI Chance of Rain"
+#     unique_id: weatherapi_chance_of_rain
+#     resource: "https://api.weatherapi.com/v1/forecast.json?key=7443af7277bc4bdb9fb133250261902&q=auto:ip&days=1&aqi=no&alerts=no"
+#     value_template: "{{ value_json.forecast.forecastday[0].day.daily_chance_of_rain }}"
+#     unit_of_measurement: "%"
+#     scan_interval: 3600        # every 60 min
+#
+#   - platform: rest
+#     name: "WeatherAPI Max Temp"
+#     unique_id: weatherapi_max_temp
+#     resource: "https://api.weatherapi.com/v1/forecast.json?key=7443af7277bc4bdb9fb133250261902&q=auto:ip&days=1&aqi=no&alerts=no"
+#     value_template: "{{ value_json.forecast.forecastday[0].day.maxtemp_c }}"
+#     unit_of_measurement: "°C"
+#     scan_interval: 3600
+#
+#   - platform: rest
+#     name: "WeatherAPI Min Temp"
+#     unique_id: weatherapi_min_temp
+#     resource: "https://api.weatherapi.com/v1/forecast.json?key=7443af7277bc4bdb9fb133250261902&q=auto:ip&days=1&aqi=no&alerts=no"
+#     value_template: "{{ value_json.forecast.forecastday[0].day.mintemp_c }}"
+#     unit_of_measurement: "°C"
+#     scan_interval: 3600
+#
+#   - platform: rest
+#     name: "WeatherAPI Total Precip"
+#     unique_id: weatherapi_total_precip
+#     resource: "https://api.weatherapi.com/v1/forecast.json?key=7443af7277bc4bdb9fb133250261902&q=auto:ip&days=1&aqi=no&alerts=no"
+#     value_template: "{{ value_json.forecast.forecastday[0].day.totalprecip_mm }}"
+#     unit_of_measurement: "mm"
+#     scan_interval: 3600
+#
+# After adding, run: Developer Tools → YAML → Check Config → Restart HA.
+# Entity IDs: sensor.weatherapi_uv_index, sensor.weatherapi_chance_of_rain,
+#             sensor.weatherapi_max_temp, sensor.weatherapi_min_temp,
+#             sensor.weatherapi_total_precip
+# =============================================================================
