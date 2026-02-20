@@ -316,7 +316,7 @@ text_sensor:
 
   - platform: homeassistant
     id: alarm_time
-    entity_id: input_datetime.alarm_time
+    entity_id: input_datetime.alarm_time_2   # ← bedroom-specific alarm time
     name: "Alarm Time"
     internal: true
 
@@ -413,42 +413,54 @@ display:
 
       switch (id(weather_index)) {
         case 0:
-          // Local temp + humidity
-          it.printf(0, 1, "T:%.1f%cC H:%.0f%%",
+          // Local temp + humidity (original format)
+          it.printf(0, 1, "T:%.1f%cC H:%.1f%%",
                     id(temperature).state, (char)223, id(humidity).state);
           break;
         case 1:
-          // UV index (WeatherAPI)
+          // UV index — integer format (%.0f) so "10(VeryHigh)" never overflows 16 chars
           {
             float uv = id(uv_index).state;
-            if (uv >= 11)      it.printf(0, 1, "UV:%.0f Extreme ", uv);
-            else if (uv >= 8)  it.printf(0, 1, "UV:%.0f VeryHigh", uv);
-            else if (uv >= 6)  it.printf(0, 1, "UV:%.0f High    ", uv);
-            else if (uv >= 3)  it.printf(0, 1, "UV:%.0f Moderate", uv);
-            else               it.printf(0, 1, "UV:%.0f Low     ", uv);
+            if (isnan(uv)) {
+              it.print(0, 1, "UV: N/A         ");
+            } else if (uv >= 11) {
+              it.printf(0, 1, "UV:%.0f (Extreme)", uv);  // max "UV:16 (Extreme)" = 15
+            } else if (uv >= 8) {
+              it.printf(0, 1, "UV:%.0f (VeryHigh)", uv); // max "UV:10 (VeryHigh)" = 16
+            } else if (uv >= 6) {
+              it.printf(0, 1, "UV:%.0f (High)   ", uv);  // "UV:7 (High)   " = 14
+            } else if (uv >= 3) {
+              it.printf(0, 1, "UV:%.0f (Moderate)", uv); // "UV:5 (Moderate)" = 15
+            } else {
+              it.printf(0, 1, "UV:%.0f (Low)    ", uv);  // "UV:2 (Low)    " = 13
+            }
           }
           break;
         case 2:
-          // Rain (mm) — OpenWeatherMap
-          it.printf(0, 1, "Rain: %.1fmm     ", id(rain).state);
+          // Rain (mm) — OpenWeatherMap (original format)
+          it.printf(0, 1, "Rain:%.1fmm", id(rain).state);
           break;
         case 3:
-          // Weather condition — OpenWeatherMap
-          it.printf(0, 1, "%-16s", id(weather_condition).state.c_str());
+          // Weather condition — hard-truncate to 12 chars so "Wxr:" + 12 = 16 max
+          {
+            std::string cond = id(weather_condition).state;
+            if (cond.length() > 12) cond = cond.substr(0, 12);
+            it.printf(0, 1, "Wxr:%s", cond.c_str());
+          }
           break;
         case 4:
-          // Feels-like temperature — OpenWeatherMap
-          it.printf(0, 1, "FeelsLk:%.1f%cC  ", id(feels_like_temp).state, (char)223);
+          // Feels-like temperature — OpenWeatherMap (original format)
+          it.printf(0, 1, "FeelsLike:%.1f%cC", id(feels_like_temp).state, (char)223);
           break;
         case 5:
-          // Day of week
+          // Day of week (original format — no %-flag, not supported on ESP8266)
           if (id(home_time).now().is_valid())
-            it.strftime(0, 1, "%-16A", id(home_time).now());
+            it.strftime(0, 1, "%A", id(home_time).now());
           break;
         case 6:
-          // Full date
+          // Date (original format restored)
           if (id(home_time).now().is_valid())
-            it.strftime(0, 1, "%d %b %Y       ", id(home_time).now());
+            it.strftime(0, 1, "%dth %b(%m) %y", id(home_time).now());
           break;
         case 7:
           // Chance of rain today (WeatherAPI)
@@ -498,6 +510,9 @@ interval:
     then:
       - lambda: |-
           // ── 8 PM cutoff: turn off backlight after 20:00 (alarm exempt) ──
+          // IMPORTANT: do NOT cut off if the 1-min night timeout is actively
+          // running — that means motion was just detected and the timer is
+          // counting down. Let it finish naturally.
           {
             auto now = id(home_time).now().is_valid()
                         ? id(home_time).now()
@@ -505,39 +520,55 @@ interval:
             if (now.is_valid()
                 && now.hour >= 20
                 && id(lcd_backlight).state
-                && id(timer_display_mode).state != 4) {
+                && id(timer_display_mode).state != 4
+                && !id(backlight_night_timeout).is_running()) {
               id(lcd_backlight).turn_off();
             }
           }
 
           // ── Alarm ring check ──
-          if (!id(alarm_enabled)
-              || !id(home_time).now().is_valid()
-              || strlen(id(alarm_time).state.c_str()) == 0) return;
+          if (!id(alarm_enabled)) return;       // switch is OFF, nothing to do
+          if (!id(home_time).now().is_valid()) return;  // no valid time yet
+
+          std::string alarm_raw = id(alarm_time).state;
+          if (alarm_raw.empty() || alarm_raw == "unknown" || alarm_raw == "unavailable") {
+            ESP_LOGW("alarm", "Alarm time entity unavailable: '%s'", alarm_raw.c_str());
+            return;
+          }
 
           if (id(timer_display_mode).state == 4) return;  // already ringing
 
-          // Parse alarm time string ("HH:MM:SS" or full datetime)
-          std::string alarm_str = id(alarm_time).state;
-          if (alarm_str.length() == 8) {
-            alarm_str = alarm_str.substr(0, 5);        // "HH:MM:SS" → "HH:MM"
-          } else if (alarm_str.length() >= 16) {
-            alarm_str = alarm_str.substr(11, 5);       // datetime  → "HH:MM"
+          // HA input_datetime returns one of:
+          //   "HH:MM:SS"               (time-only,  len=8)
+          //   "YYYY-MM-DD HH:MM:SS"    (datetime,   len=19)
+          // Extract just "HH:MM"
+          std::string alarm_str;
+          if (alarm_raw.length() >= 19) {
+            alarm_str = alarm_raw.substr(11, 5);  // datetime  → "HH:MM"
+          } else if (alarm_raw.length() >= 8) {
+            alarm_str = alarm_raw.substr(0, 5);   // "HH:MM:SS" → "HH:MM"
+          } else {
+            ESP_LOGW("alarm", "Unexpected alarm time format: '%s'", alarm_raw.c_str());
+            return;
           }
 
           char cur[6];
           id(home_time).now().strftime(cur, sizeof(cur), "%H:%M");
           int cur_min = atoi(cur + 3);
 
+          ESP_LOGD("alarm", "Now=%s  Alarm=%s  enabled=%d  triggered=%d  lastMin=%d",
+                   cur, alarm_str.c_str(),
+                   (int)id(alarm_enabled), id(alarm_triggered), id(last_alarm_minute));
+
           if (strcmp(cur, alarm_str.c_str()) == 0) {
             if (id(alarm_triggered) == 0 && id(last_alarm_minute) != cur_min) {
               id(alarm_triggered) = 1;
               id(last_alarm_minute) = cur_min;
               id(timer_display_mode).publish_state(4);
-              id(room_lcd).backlight();   // Ensure visible even after 8 PM
+              id(room_lcd).backlight();   // Force ON even after 8 PM
             }
           } else {
-            id(alarm_triggered) = 0;
+            id(alarm_triggered) = 0;  // Reset once the minute has passed
           }
 
   # Alarm backlight blink — every 500 ms
