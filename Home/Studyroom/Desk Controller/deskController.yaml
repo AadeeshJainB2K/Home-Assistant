@@ -1,6 +1,6 @@
 substitutions:
   name: esp-web-tools-example-c809af
-  friendly_name: Study Room
+  friendly_name: Study Room 
 
 packages:
   esphome.esp_web_tools_example: github://esphome/example-configs/esp-web-tools/esp8266.yaml@main
@@ -13,15 +13,15 @@ esphome:
     priority: -100.0
     then:
       - switch.turn_on: lcd_backlight
-      - switch.turn_on: alarm_switch
+      - switch.turn_off: alarm_switch
 
 api:
   encryption:
     key: LVuvpQ8/6duqQl4/dStZs3cug3kYSuAh012ADOCX+8w=
-
+  reboot_timeout: 0s
 binary_sensor:
   - platform: gpio
-    id: fanInput
+    id: tableFanInput
     pin:
       number: GPIO14
       inverted: True
@@ -30,15 +30,15 @@ binary_sensor:
         pullup: true
     on_press:
       then:
-        - switch.turn_on: fanSwitch
+        - switch.turn_on: tableFanSwitch
         - script.execute: show_fan_on_message
     on_release:
       then:
-        - switch.turn_off: fanSwitch
+        - switch.turn_off: tableFanSwitch
         - script.execute: show_fan_off_message
 
   - platform: gpio
-    id: lightInput
+    id: nightLampInput
     pin:
       number: GPIO5
       inverted: True
@@ -47,14 +47,14 @@ binary_sensor:
         pullup: true
     on_press:
       then:
-        - switch.turn_on: lightSwitch
+        - switch.turn_on: nightLampSwitch
         - script.execute: show_light_on_message
     on_release:
       then:
         - lambda: |-
             // Mark this as a physical off request.
             id(physical_light_off) = 1;
-        - switch.turn_off: lightSwitch
+        - switch.turn_off: nightLampSwitch
         - script.execute: show_light_off_message
 
   - platform: template
@@ -80,15 +80,15 @@ binary_sensor:
 
 switch:
   - platform: gpio
-    name: "Fan"
+    name: "Table Fan"
     pin: GPIO16
-    id: fanSwitch
+    id: tableFanSwitch
     inverted: True
 
   - platform: gpio
-    name: "Light"
+    name: "Night Lamp"
     pin: GPIO4
-    id: lightSwitch
+    id: nightLampSwitch
     inverted: True
     on_turn_off:
       then:
@@ -106,7 +106,7 @@ switch:
                 id(my_lcd).backlight();
               } else {
                 // Digital off: force the light to remain on.
-                id(lightSwitch).turn_on();
+                id(nightLampSwitch).turn_on();
               }
             }
   - platform: template
@@ -321,9 +321,9 @@ display:
             break;
           case 1:
             if (id(uv_index).state >= 11) {
-              it.printf(0, 1, "UV:%.1f (Extreme)", id(uv_index).state);
+              it.printf(0, 1, "UV:%.1f(Extreme)", id(uv_index).state);
             } else if (id(uv_index).state >= 8) {
-              it.printf(0, 1, "UV:%.1f(VeryHigh)", id(uv_index).state);
+              it.printf(0, 1,"UV:%.1f(VeryHigh)",id(uv_index).state);
             } else if (id(uv_index).state >= 6) {
               it.printf(0, 1, "UV:%.1f (High)", id(uv_index).state);
             } else if (id(uv_index).state >= 3) {
@@ -387,43 +387,43 @@ globals:
   - id: weather_index
     type: int
     restore_value: no
-    initial_value: "0"
+    initial_value: '0'
   - id: timer_start_time
     type: uint32_t
     restore_value: no
-    initial_value: "0"
+    initial_value: '0'
   - id: timer_elapsed_time
     type: uint32_t
     restore_value: no
-    initial_value: "0"
+    initial_value: '0'
   - id: stopwatch_start_time
     type: uint32_t
     restore_value: no
-    initial_value: "0"
+    initial_value: '0'
   - id: stopwatch_elapsed_time
     type: uint32_t
     restore_value: no
-    initial_value: "0"
+    initial_value: '0'
   - id: message_scroll_offset
     type: uint8_t
     restore_value: no
-    initial_value: "0"
+    initial_value: '0'
   - id: alarm_triggered
     type: int
     restore_value: no
-    initial_value: "0"
+    initial_value: '0'
   - id: physical_light_off
     type: int
     restore_value: no
-    initial_value: "0"
+    initial_value: '0'
   - id: alarm_enabled
     type: bool
     restore_value: no
-    initial_value: "false"
+    initial_value: 'false'
   - id: last_alarm_minute
     type: int
     restore_value: no
-    initial_value: "-1"
+    initial_value: '-1'
 
 sensor:
   - platform: dht
@@ -730,7 +730,7 @@ interval:
                 id(alarm_triggered) = 1;
                 id(last_alarm_minute) = current_minute;
                 id(timer_display_mode).publish_state(4);
-                id(lightSwitch).turn_on();
+                id(nightLampSwitch).turn_on();
               }
             } else {
               id(alarm_triggered) = 0;
@@ -753,6 +753,7 @@ interval:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  min_auth_mode: WPA2
   ap:
     ssid: "Study Room's Fallback Hotspot"
     password: "Amanagam123"

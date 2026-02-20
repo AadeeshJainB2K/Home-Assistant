@@ -1,0 +1,130 @@
+substitutions:
+  name: esp-web-tools-example-57526e
+  friendly_name: Study Room
+packages:
+  esphome.esp_web_tools_example: github://esphome/example-configs/esp-web-tools/esp8266.yaml@main
+esphome:
+  name: ${name}
+  name_add_mac_suffix: false
+  friendly_name: ${friendly_name}
+ 
+api:
+  encryption:
+    key: wiY93uQaUOkjHLfgy9vaO+ca3YuD2/AeR7PNNA1epjQ=
+  reboot_timeout: 0s
+
+esp8266:
+  board: d1_mini
+    
+output:
+  - platform: gpio
+    id: fanOutput
+    pin: GPIO0
+    inverted: True
+  
+  - platform: gpio
+    id: lightOutput
+    pin: GPIO14
+    inverted: True
+  
+  - platform: gpio
+    id: socketOutput
+    pin: GPIO2
+    inverted: True
+  
+  - platform: gpio
+    id: extensionOutput
+    pin: GPIO12
+    inverted: True
+
+light:
+  - platform: binary
+    name: Light
+    id: studyRoomLight
+    output: lightOutput
+
+fan:
+  - platform: binary
+    name: Fan
+    id: studyRoomFan
+    output: fanOutput
+
+switch:
+  - platform: output
+    name: Socket
+    id: studyRoomSocket
+    output: socketOutput
+  
+  - platform: output
+    name: Extension Board
+    id: studyRoomExtensionBoard
+    output: extensionOutput
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO4
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    id: "lightSwitch"
+    on_press:
+      then:
+        - light.turn_on: studyRoomLight
+    on_release:
+      then:
+        - light.turn_off: studyRoomLight
+
+  - platform: gpio
+    pin:
+      number: GPIO5
+      inverted: True
+      mode:
+        input: true
+        pullup: true
+    id: "fanSwitch"
+    on_press:
+      then:
+        - fan.turn_on: studyRoomFan
+    on_release:
+      then:
+        - fan.turn_off: studyRoomFan
+
+  - platform: gpio
+    pin:
+      number: GPIO3
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    id: "extensionBoardSwitch"
+    on_press:
+      then:
+        - switch.turn_on: studyRoomExtensionBoard
+    on_release:
+      then:
+        - switch.turn_off: studyRoomExtensionBoard
+
+  - platform: gpio
+    pin:
+      number: GPIO13
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    id: "socketSwitch"
+    on_press:
+      then:
+        - switch.turn_on: studyRoomSocket
+    on_release:
+      then:
+        - switch.turn_off: studyRoomSocket
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  min_auth_mode: WPA2
+  ap:
+    ssid: "StudyRoom-Smart-Switch-Board"
+    password: "Amanagam123"

@@ -1,6 +1,6 @@
 substitutions:
   name: esp-web-tools-example-716a9a
-  friendly_name: "Smart Irrigation System "
+  friendly_name: 'Driveway'
 
 packages:
   esphome.esp_web_tools_example: github://esphome/example-configs/esp-web-tools/esp8266.yaml@main
@@ -13,12 +13,13 @@ esphome:
 api:
   encryption:
     key: fXHZXWUuITkIXhgB/ICPWqnXJHvyfM5kFekPgum/8w8=
+  reboot_timeout: 0s
 
 binary_sensor:
   - platform: gpio
     id: dripValveInput
     pin:
-      number: GPIO012
+      number: GPIO05
       inverted: True
       mode:
         input: true
@@ -33,7 +34,7 @@ binary_sensor:
   - platform: gpio
     id: waterPumpInput
     pin:
-      number: GPIO14
+      number: GPIO4
       inverted: True
       mode:
         input: true
@@ -48,25 +49,27 @@ binary_sensor:
 switch:
   - platform: gpio
     name: "Drip Valve"
-    pin: GPIO4
+    pin: GPIO14
     id: dripValveSwitch
     inverted: True
+    restore_mode: ALWAYS_OFF
 
   - platform: gpio
     name: "Water Pump"
-    pin: GPIO5
+    pin: GPIO12
     id: waterPumpSwitch
     inverted: True
-
+    restore_mode: ALWAYS_OFF
+    
 globals:
   - id: current_session_water
     type: float
     restore_value: no
-    initial_value: "0.0"
+    initial_value: '0.0'
   - id: previous_flow_state
     type: bool
     restore_value: no
-    initial_value: "false"
+    initial_value: 'false'
 
 sensor:
   - platform: pulse_counter
@@ -96,7 +99,21 @@ sensor:
     lambda: |-
       return id(current_session_water);
     update_interval: 1s
-
+  
+  - platform: adc
+    pin: A0
+    name: "Soil Moisture"
+    update_interval: 1s
+    unit_of_measurement: "%"
+    accuracy_decimals: 2
+    filters:
+    - calibrate_linear:
+        - 0.63 -> 0.00
+        - 0.28 -> 100.00
+    - lambda: |-
+        if (x < 0) return 0;
+        if (x > 100) return 100;
+        return x;
 interval:
   - interval: 1s
     then:
@@ -117,7 +134,7 @@ interval:
 
           // Update the previous flow state for the next interval.
           id(previous_flow_state) = isFlowing;
-
+          
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
