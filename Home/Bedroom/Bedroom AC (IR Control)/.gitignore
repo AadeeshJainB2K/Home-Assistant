@@ -1,0 +1,5 @@
+# Ignore ESPHome secrets file — contains Wi-Fi credentials
+secrets.yaml
+
+# Ignore ESPHome build artifacts
+.esphome/
